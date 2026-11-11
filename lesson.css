@@ -237,3 +237,4 @@ body {
 .order-btns button:disabled { opacity: .3; cursor: default; }
 .goal-note { height: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 18px; text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--muted); line-height: 1.6; }
 .answer-code { background: #fff; border-radius: 10px; padding: 10px 14px; margin: 8px 0 0; font: 600 1.05rem/1.6 'JetBrains Mono', monospace; white-space: pre; overflow-x: auto; }
+.order-note { margin-left: auto; padding-left: 12px; color: #F5D98B; font-size: .95rem; font-weight: 700; text-align: right; }

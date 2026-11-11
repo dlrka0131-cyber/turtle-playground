@@ -49,7 +49,8 @@
   });
   Object.keys(X.talk || {}).forEach(i => { BASE[i].talk = X.talk[i]; });
   Object.keys(X.clues || {}).forEach(i => { BASE[i].clue = X.clues[i]; });
-  const MISSIONS = BASE.slice();
+  // rebuild: 원래 미션 목록을 받아 새 목록을 돌려준다 (차시 흐름을 통째로 다시 짤 때)
+  const MISSIONS = X.rebuild ? X.rebuild(BASE) : BASE.slice();
   // insert: [[원래 미션 번호, 새 미션]] — 그 미션 "바로 앞"에 끼워 넣는다
   (X.insert || []).forEach(([at, m]) => MISSIONS.splice(MISSIONS.indexOf(BASE[at]), 0, m));
   if (challenge) MISSIONS.splice(MISSIONS.length - 1, 0, challenge);
@@ -190,7 +191,7 @@
       if (l.prep) {
         idx += PREP.length;
         return `<div class="prep-bar" onclick="this.nextElementSibling.classList.toggle('open')">🐢 거북이 데려오기 주문 3줄 <span style="font-weight:400">(이미 써 있어요 · 눌러서 보기)</span></div>
-          <div class="prep-lines">${PREP.map(p => lineHtml(p)).join('')}</div>`;
+          <div class="prep-lines${X.showPrep ? ' open' : ''}">${PREP.map(p => lineHtml(p)).join('')}</div>`;
       }
       if (l.fold) return `<div class="prep-bar" onclick="this.nextElementSibling.classList.toggle('open')">📜 ${l.title || '지난 시간 코드'} <span style="font-weight:400">(이미 써 있어요 · 눌러서 보기)</span></div>
           <div class="prep-lines">${walk(l.fold)}</div>`;
@@ -228,7 +229,7 @@
     return '정답: ' + fb.map((b, i) => (fb.length > 1 ? `${i + 1}번째 빈칸 ` : '') + `<b>${esc(b.ans)}</b>`).join(', ') + '<br>왜 그런지 한 번 생각해 보고 써요!';
   }
   const hasHint = m => isGoal(m) || (m.kind === undefined && fixedBlanks(m).length > 0);
-  const goalAnswer = m => '이렇게 하면 돼요. 보고 <b>직접</b> 고쳐 보세요!<pre class="answer-code">' + esc(solutionOf(m).replace(PREP_TEXT, '').trim()) + '</pre>';
+  const goalAnswer = m => '이렇게 하면 돼요. 보고 <b>직접</b> 고쳐 보세요!<pre class="answer-code">' + esc((m.noPrep || m.fullAnswer ? solutionOf(m) : solutionOf(m).replace(PREP_TEXT, '')).trim()) + '</pre>';
   function hintHtml(m) {
     const wrong = state[cur].wrong || 0;
     if (wrong < CLUE_AFTER(m)) return '🏆 이 미션은 <b>먼저 스스로</b> 해 봐요!<br>한 번 실행해 본 뒤에도 어려우면 생각 힌트가 열려요.';
@@ -252,8 +253,8 @@
   // 지금 화면의 입력값으로 진짜 파이썬 코드를 만든다
   function composeCode(m) {
     if (m.kind === 'free' || m.kind === 'goal') return { text: $('free-code').value, mine: [] };
-    if (m.kind === 'predict') return { text: PREP_TEXT + m.code + '\n', mine: [] };
-    if (m.kind === 'order') return { text: PREP_TEXT + state[cur].order.map(i => m.lines[i]).join('\n') + '\n', mine: [] };
+    if (m.kind === 'predict') return { text: (m.noPrep ? '' : PREP_TEXT) + m.code + '\n', mine: [] };
+    if (m.kind === 'order') return { text: (m.noPrep ? '' : PREP_TEXT) + state[cur].order.map(i => m.lines[i]).join('\n') + '\n', mine: [] };
     if (m.kind === 'preview') return { text: L.preview, mine: [] };
     const flat = flatten(m.kind === 'more' ? moreLines(m) : m.lines);
     const mine = [];
@@ -332,7 +333,7 @@
     if (last) html += `<div class="actions"><button id="complete-btn" class="complete-btn" type="button">✅ ${L.num}차시 완료!</button></div>`;
     missionEl.innerHTML = html;
     missionEl.scrollTop = 0;
-    if (isGoal(m)) showGoal(m); else clearGoal();
+    if (isGoal(m) && !m.exact) showGoal(m); else clearGoal();
     bindMission(m);
     renderDots();
     updateNav();
@@ -402,9 +403,15 @@
       $('free-reset').onclick = () => { ta.value = first; state[cur].code = first; };
       // 단어 버튼: 커서 자리에 써 준다. 괄호 안이 비어 있으면 커서를 괄호 안에 둔다
       missionEl.querySelectorAll('[data-bank]').forEach(bt => bt.onclick = () => {
-        const text = bt.dataset.bank.replace('( )', '()');
-        const at = ta.selectionStart;
-        ta.setRangeText(text, at, ta.selectionEnd, 'end');
+        let text = bt.dataset.bank.replace('( )', '()');
+        // 지금 줄에 이미 글자가 있으면 그 줄 끝에서 줄을 바꾸고(들여쓰기도 이어서) 쓴다
+        const v = ta.value, lineStart = v.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+        let lineEnd = v.indexOf('\n', ta.selectionStart); if (lineEnd < 0) lineEnd = v.length;
+        const line = v.slice(lineStart, lineEnd);
+        let at = ta.selectionStart, pre = '';
+        if (line.trim()) { at = lineEnd; pre = '\n' + line.match(/^ */)[0] + (/:\s*$/.test(line) ? '    ' : ''); }
+        ta.setRangeText(pre + text, at, line.trim() ? at : ta.selectionEnd, 'end');
+        at += pre.length;
         const hole = bt.dataset.bank.indexOf('( )');
         if (hole >= 0) ta.setSelectionRange(at + hole + 1, at + hole + 1);
         state[cur].code = ta.value; ta.focus();
@@ -424,7 +431,7 @@
       const draw = () => {
         $('order-list').innerHTML = st.order.map((li, pos) => `<div class="order-row">
           <span class="order-btns"><button data-up="${pos}" type="button"${pos === 0 ? ' disabled' : ''}>▲</button><button data-down="${pos}" type="button"${pos === st.order.length - 1 ? ' disabled' : ''}>▼</button></span>
-          <code>${esc(m.lines[li]).replace(/^ +/, sp => '<i class="ind"></i>'.repeat(sp.length / 4))}</code></div>`).join('');
+          <code>${esc(m.lines[li]).replace(/^ +/, sp => '<i class="ind"></i>'.repeat(sp.length / 4))}</code>${m.notes ? `<span class="order-note">${m.notes[li]}</span>` : ''}</div>`).join('');
         const swap = (a, b) => { [st.order[a], st.order[b]] = [st.order[b], st.order[a]]; draw(); };
         $('order-list').querySelectorAll('[data-up]').forEach(b => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
         $('order-list').querySelectorAll('[data-down]').forEach(b => b.onclick = () => swap(+b.dataset.down, +b.dataset.down + 1));
@@ -491,11 +498,12 @@
         return;
       }
       if (isGoal(m)) {
-        const verdict = matchGoal(m);
+        // exact: 그림이 아니라 줄 순서 자체가 답인 순서 맞추기 (거북이 데려오기 3줄)
+        const verdict = m.exact ? { ok: state[cur].order.every((li, pos) => li === pos) } : matchGoal(m);
         const missed = !verdict.ok ? null : (m.must || []).find(([word]) => !text.includes(word));
         if (!verdict.ok || missed) {
           if (text !== state[cur].lastWrong) { state[cur].lastWrong = text; state[cur].wrong = (state[cur].wrong || 0) + 1; drawHint(m); }
-          feedback(missed ? missed[1] : (verdict.close ? '거의 다 왔어요! 🔍 ' : '아직 목표 그림과 달라요! 🔍 ') + '<b>흐린 그림</b>과 내 그림을 비교해 보세요. 어디가 다른가요?' + ((state[cur].wrong || 0) >= 1 ? ' 어려우면 <b>💡 힌트 보기</b>!' : ''), false);
+          feedback(missed ? missed[1] : m.fail ? m.fail : (verdict.close ? '거의 다 왔어요! 🔍 ' : '아직 목표 그림과 달라요! 🔍 ') + '<b>흐린 그림</b>과 내 그림을 비교해 보세요. 어디가 다른가요?' + ((state[cur].wrong || 0) >= 1 ? ' 어려우면 <b>💡 힌트 보기</b>!' : ''), false);
           return;
         }
       }
@@ -523,7 +531,7 @@
       else if (m.kind === 'order') {
         // 줄 순서가 틀려서 난 에러는 "글자가 틀렸다"가 아니라 "순서가 틀렸다"고 알려 준다
         if (text !== state[cur].lastWrong) { state[cur].lastWrong = text; state[cur].wrong = (state[cur].wrong || 0) + 1; drawHint(m); }
-        feedback('이 순서로는 거북이가 이해하지 못해요! 🧩 <b>안쪽으로 들어간 줄</b>은 for 줄 <b>바로 아래</b>에 모여 있어야 해요.', false);
+        feedback(m.fail || '이 순서로는 거북이가 이해하지 못해요! 🧩 <b>안쪽으로 들어간 줄</b>은 for 줄 <b>바로 아래</b>에 모여 있어야 해요.', false);
       }
       else feedback(msg, false);
     });
@@ -596,6 +604,7 @@
     if (s.includes('TypeError') && s.includes('str')) return '🔢 글자로는 계산하거나 걸을 수 없어요! 대답을 <b>int( )</b>로 감싸서 숫자로 바꿔 주세요.' + line;
     if (s.includes('IndentationError')) return '🔁 줄 맞추기가 틀렸어요! 상자 안의 줄은 앞에 <b>띄어쓰기 4칸</b>이 있어야 해요.' + line;
     if (s.includes('has no attribute')) return '🐢 거북이가 모르는 단어예요! <b>영어 철자</b>가 맞는지 확인해 보세요.' + line;
+    if (s.includes('NameError') && !/=\s*turtle\.Turtle\(\)/.test(code)) return '🐢 거북이를 아직 안 데려왔어요! 맨 위에 <b>거북이 데려오기 3줄</b>이 있어야 해요. (상자 열기 → 거북이 만들기 → 거북이 모양)';
     if (s.includes('NameError')) return '🔤 모르는 이름이에요! <b>철자</b>와 <b>큰 글자/작은 글자</b>를 확인해 보세요. (t 는 작은 글자!)' + line;
     if (/ParseError|SyntaxError|TokenError/.test(s)) return '✏️ 글자가 하나 빠졌거나 더 있어요! <b>괄호 ( )</b>, <b>따옴표 " "</b>, <b>두 점 :</b> 을 확인해 보세요.' + line;
     return '앗! 에러가 났어요 😅 위 글자와 똑같은지 다시 확인해 보세요.' + line;
@@ -647,7 +656,7 @@
 
   // ---------- 목표 그림: 정답 코드를 몰래 돌려 흐린 그림으로 깔고, 내 그림과 비교한다 ----------
   const PREP_TEXT = PREP.map(p => p.given).join('\n') + '\n';
-  const solutionOf = m => m.kind === 'order' ? PREP_TEXT + m.lines.join('\n') + '\n' : m.solution;
+  const solutionOf = m => m.kind === 'order' ? (m.noPrep ? '' : PREP_TEXT) + m.lines.join('\n') + '\n' : m.solution;
   const CELL = 6;
   // 거북이 모양(맨 위 층)은 빼고, 그려진 선·색만 한 장으로 모은다
   function capture(boxId) {
