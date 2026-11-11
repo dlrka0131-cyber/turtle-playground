@@ -635,11 +635,16 @@
       talk: '펜을 굵게 하는 명령, 기억나나요? 이번엔 보여 주는 글씨가 없어요!<br>괄호 안 숫자는 <b>원하는 굵기</b>로 정해서, 펜 굵기를 바꾸는 줄을 <b>직접</b> 써 보세요. <span class="small">(예: 3, 20)</span>',
       lines: [{ prep: true }, { given: 't.color("red")', note: '빨간색 펜' }, { write: 't.pensize(@)', note: '펜 굵기 ?', placeholder: '✏️ 펜 굵기를 바꾸는 명령을 직접 써 보세요' }, { given: 't.circle(80)', note: '동그라미 80' }],
       done: '보지 않고 스스로 썼어요! 👍 숫자가 클수록 선이 뚱뚱해져요.' },
+    color: { title: '다른 색 골라 직접 쓰기 🌈',
+      talk: '이번엔 <b>빨강 말고 다른 색</b> 펜으로 바꿔 보세요! 보여 주는 글씨는 없어요.<br>펜 색깔을 바꾸는 <b>줄 전체</b>를 처음부터 직접 써 보세요.<br>'
+        + '<span class="small">색깔 이름 예시: <b>blue</b> · <b>green</b> · <b>gold</b> · <b>purple</b> · <b>pink</b></span>',
+      lines: [{ prep: true }, { write: 't.color("@")', wild: 'text', wildNot: ['red'], wildNotMsg: '🙅 빨강은 아까 썼어요! <b>다른 색</b> 이름으로 바꿔 써 보세요.', note: '내가 고른 색 펜', placeholder: '✏️ 펜 색깔을 바꾸는 줄을 직접 써 보세요' }, { given: 't.circle(80)', note: '동그라미 80' }],
+      done: '보지 않고 한 줄을 통째로 썼어요! 🎨 따옴표 안의 색깔 이름만 바꾸면 어떤 색이든 돼요.' },
     apple: { kind: 'goal', title: '🧩 조립하기! 빨간 사과',
       talk: '단어 버튼으로 <b>속이 꽉 찬 빨간 동그라미</b>를 조립해 보세요.<br>색칠은 샌드위치 같아요. 어떤 버튼을 <b>어떤 순서로</b> 눌러야 안이 칠해질까요?',
       start: PT, fullAnswer: true,
       solution: PT + code('t.color("red")', FILL, 't.circle(80)', END) + '\n',
-      bank: ['t.circle(80)', 't.end_fill()', 't.color("red")', 't.begin_fill()'],
+      bank: ['t.circle(80)', 't.end_fill()', 't.forward(80)', 't.color("red")', 't.color("blue")', 't.begin_fill()'],
       clue: '🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요. 동그라미를 그리기 <b>전</b>에 시작하고, 다 그린 <b>뒤</b>에 끝내요.<br>🎨 색은 맨 처음에 정해요.',
       done: '빨간 사과 완성! 🍎 순서가 틀리면 칠해지지 않아요. 컴퓨터는 <b>쓴 순서대로만</b> 해요. <b>다음 →</b>' },
     green: fix('초록 네모가 안 칠해져요', '속이 꽉 찬 <b>초록 네모</b>를 그리려고 했는데 선만 나와요! 😵<br>먼저 <b>▶ 실행하기</b>로 확인하고, <b>빠진 줄 하나</b>를 알맞은 자리에 넣어 보세요.',
@@ -684,8 +689,8 @@
   delete E[2].review; delete E[2].challenge; delete E[2].insert;
   Object.assign(E[2], {
     showPrep: true,
-    // 원래 미션에서 남긴 것: 0 미리보기, 1 펜 색깔, 2 다른 색 골라 보기(실험), 3 펜 굵게, 4 색칠 시작, 7 자유
-    rebuild: b => [b[0], b[1], b[2], b[3], P2.write, b[4], P2.apple, P2.green, P2.star, P2.blue, P2.pick, P2.orange, b[7]],
+    // 원래 미션에서 남긴 것: 0 미리보기, 1 펜 색깔, 3 펜 굵게, 4 색칠 시작, 7 자유 (2 는 직접 쓰기로 바꿈)
+    rebuild: b => [b[0], b[1], P2.color, b[3], P2.write, b[4], P2.apple, P2.green, P2.star, P2.blue, P2.pick, P2.orange, b[7]],
   });
 
   // ---------- 3차시 ----------

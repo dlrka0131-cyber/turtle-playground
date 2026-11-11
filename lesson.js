@@ -150,7 +150,15 @@
     return { ok: false, n, msg: `🔍 <b>${n + 1}번째</b> 글자가 달라요: <b>${a === ' ' ? '띄어쓰기' : esc(a)}</b> 대신 <b>${CHAR_NAME[b] || esc(b)}</b>` };
   }
   // 직접 쓰기 줄의 정답: @ 자리에는 학생이 쓴 숫자를 넣어서 비교한다
-  const writeTarget = (tpl, typed) => tpl.replace(/@/g, (typed.match(/-?\d+/) || ['100'])[0]);
+  // l.wild === 'text' 이면 @ 자리에 "따옴표 안의 영어 낱말"을 넣는다 (색 이름처럼 아무 낱말이나 되는 줄)
+  const writeTarget = (tpl, typed, wild) => tpl.replace(/@/g, wild === 'text' ? (typed.match(/"([a-z]+)"/i) || [0, 'red'])[1] : (typed.match(/-?\d+/) || ['100'])[0]);
+  // 직접 쓰기 줄이 정말 통과인지: 숫자(또는 낱말)를 썼는지, 못 쓰게 한 낱말(wildNot)이 아닌지
+  const writeOk = (l, v) => {
+    const word = l.wild === 'text' ? (v.match(/"([a-z]+)"/i) || [])[1] : (/\d/.test(v) ? 1 : 0);
+    if (!word) return false;
+    if (l.wildNot && l.wildNot.includes(String(word).toLowerCase())) return false;
+    return compare(v, writeTarget(l.write, v, l.wild)).ok;
+  };
 
   // ---------- 코드 카드 ----------
   function lineHtml(l, idx) {
@@ -383,9 +391,10 @@
     });
     missionEl.querySelectorAll('[data-write]').forEach(inp => {
       const i = +inp.dataset.write;
-      const tpl = flatten(m.lines)[i].l.write;
+      const wl = flatten(m.lines)[i].l, tpl = wl.write;
       inp.addEventListener('input', () => {
-        const r = compare(inp.value, writeTarget(tpl, inp.value));
+        const r = compare(inp.value, writeTarget(tpl, inp.value, wl.wild));
+        if (r.ok && !writeOk(wl, inp.value)) { r.ok = false; r.n = 0; r.msg = wl.wildNotMsg || '🙅 다른 걸로 바꿔 써 보세요!'; }
         const hint = missionEl.querySelector(`[data-th="${i}"]`);
         // 다 맞았거나, 틀린 글자가 있을 때만 알려 준다 (쓰는 도중에는 다음 글자를 알려 주지 않는다)
         hint.innerHTML = r.ok ? r.msg : (inp.value && r.n < inp.value.trim().length ? r.msg : '');
@@ -500,7 +509,7 @@
       if (f.l.type !== undefined && !compare(missionEl.querySelector(`[data-type="${i}"]`).value, f.l.type).ok) { ok = false; typeMiss = true; }
       if (f.l.write !== undefined) {
         const v = missionEl.querySelector(`[data-write="${i}"]`).value;
-        if (!/\d/.test(v) || !compare(v, writeTarget(f.l.write, v)).ok) { ok = false; typeMiss = true; }
+        if (!writeOk(f.l, v)) { ok = false; typeMiss = true; }
       }
       if (f.l.blank !== undefined) {
         f.l.answers.forEach((ans, k) => {
