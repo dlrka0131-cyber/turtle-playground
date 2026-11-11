@@ -626,24 +626,66 @@
     rebuild: b => [b[0], P1.bring, b[2], P1.write, b[4], P1.square, b[6], P1.small, P1.tri, P1.star, P1.hex, P1.circle, P1.stairs, b[11]],
   });
 
-  // ---------- 2차시 ----------
+  // ---------- 2차시: 1차시 방식으로 통째로 다시 짰다 ----------
+  // 새 명령(color, pensize, begin_fill/end_fill)을 따라 써 보고 → 직접 쓰기 → 조립 →
+  // 줄이 빠진 코드 고치기 → 바꾸기 → 코드 고르기 → 빈 화면에서 만들기로 이어 간다.
+  const FILL = 't.begin_fill()', END = 't.end_fill()';
+  const P2 = {
+    write: { title: '직접 써 보기 🖍️',
+      talk: '펜을 굵게 하는 명령, 기억나나요? 이번엔 보여 주는 글씨가 없어요!<br>괄호 안 숫자는 <b>원하는 굵기</b>로 정해서, 펜 굵기를 바꾸는 줄을 <b>직접</b> 써 보세요. <span class="small">(예: 3, 20)</span>',
+      lines: [{ prep: true }, { given: 't.color("red")', note: '빨간색 펜' }, { write: 't.pensize(@)', note: '펜 굵기 ?', placeholder: '✏️ 펜 굵기를 바꾸는 명령을 직접 써 보세요' }, { given: 't.circle(80)', note: '동그라미 80' }],
+      done: '보지 않고 스스로 썼어요! 👍 숫자가 클수록 선이 뚱뚱해져요.' },
+    apple: { kind: 'goal', title: '🧩 조립하기! 빨간 사과',
+      talk: '단어 버튼으로 <b>속이 꽉 찬 빨간 동그라미</b>를 조립해 보세요.<br>색칠은 샌드위치 같아요. 어떤 버튼을 <b>어떤 순서로</b> 눌러야 안이 칠해질까요?',
+      start: PT, fullAnswer: true,
+      solution: PT + code('t.color("red")', FILL, 't.circle(80)', END) + '\n',
+      bank: ['t.circle(80)', 't.end_fill()', 't.color("red")', 't.begin_fill()'],
+      clue: '🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요. 동그라미를 그리기 <b>전</b>에 시작하고, 다 그린 <b>뒤</b>에 끝내요.<br>🎨 색은 맨 처음에 정해요.',
+      done: '빨간 사과 완성! 🍎 순서가 틀리면 칠해지지 않아요. 컴퓨터는 <b>쓴 순서대로만</b> 해요. <b>다음 →</b>' },
+    green: fix('초록 네모가 안 칠해져요', '속이 꽉 찬 <b>초록 네모</b>를 그리려고 했는데 선만 나와요! 😵<br>먼저 <b>▶ 실행하기</b>로 확인하고, <b>빠진 줄 하나</b>를 알맞은 자리에 넣어 보세요.',
+      code('t.color("green")', FILL, 'for i in range(4):', '    t.forward(120)', '    t.left(90)'),
+      code('t.color("green")', FILL, 'for i in range(4):', '    t.forward(120)', '    t.left(90)', END),
+      '🪣 색칠을 <b>시작</b>하면 꼭 <b>끝</b>도 해야 칠해져요. 끝내는 줄은 도형을 다 그린 <b>뒤</b>에 써요.'),
+    star: fix('노란 별이 안 칠해져요', '이번에도 칠이 안 돼요! 😵 <b>노란 별</b>을 칠하려고 했는데 선만 그려져요.<br>▶ 실행해서 확인하고, 이번엔 <b>다른 줄</b>이 빠졌어요. 찾아서 넣어 보세요.',
+      code('t.color("gold")', 'for i in range(5):', '    t.forward(150)', '    t.left(144)', END),
+      code('t.color("gold")', FILL, 'for i in range(5):', '    t.forward(150)', '    t.left(144)', END),
+      '🌟 샌드위치의 위쪽 빵이 없어요. 색칠 <b>시작</b> 줄이 있나요? 그리기 <b>전에</b> 있어야 해요.'),
+    blue: Object.assign(fix('초록 네모를 파란 세모로', '이번엔 고장 난 게 아니에요! 잘 되는 <b>초록 네모</b> 코드를 <b>바꿔서</b>, 흐린 그림 같은 <b>파란 세모</b>로 만들어 보세요.<br>숫자와 색을 <b>세 군데</b> 바꿔야 해요.',
+      code('t.color("green")', FILL, 'for i in range(4):', '    t.forward(120)', '    t.left(90)', END),
+      code('t.color("blue")', FILL, 'for i in range(3):', '    t.forward(120)', '    t.left(120)', END),
+      '🔺 세모는 변이 <b>3개</b>, 도는 숫자는 <b>360 ÷ 3 = ?</b><br>🎨 색 이름도 영어로 바꿔요.'),
+      { title: '🔧 바꾸기! 초록 네모를 파란 세모로', done: '파란 세모 완성! 🔺 색, 횟수, 도는 숫자를 바꿔서 전혀 다른 그림을 만들었어요. <b>다음 →</b>' }),
+    pick: { kind: 'pick', noPrep: true, title: '🧩 골라서 만들기! 굵은 노란 별',
+      talk: '처음부터 끝까지 코드를 <b>골라서</b> 만들어요.<br>왼쪽 <b>한글 설명</b>을 읽고, 그 일을 하는 <b>코드</b>를 골라 순서대로 눌러 보세요. 안쪽 줄은 들여써져 있어요.',
+      steps: [
+        { ko: '① 거북이 상자 열기', code: 'import turtle' },
+        { ko: '② 거북이를 꺼내 t 라고 부르기', code: 't = turtle.Turtle()' },
+        { ko: '③ t 를 거북이 모양으로', code: 't.shape("turtle")' },
+        { ko: '④ 펜을 금색으로', code: 't.color("gold")' },
+        { ko: '⑤ 펜을 굵기 8로', code: 't.pensize(8)' },
+        { ko: '⑥ 색칠 시작!', code: 't.begin_fill()' },
+        { ko: '⑦ 5번 해 줘!', code: 'for i in range(5):' },
+        { ko: '⑧ 앞으로 150', code: 't.forward(150)', indent: 1 },
+        { ko: '⑨ 별 각도 144로 돌기', code: 't.left(144)', indent: 1 },
+        { ko: '⑩ 색칠 끝!', code: 't.end_fill()' },
+      ],
+      bank: ['t.left(144)', 't.end_fill()', 'for i in range(5):', 't.color("gold")', 'import turtle', 't.pensize(8)', 't.begin_fill()', 't.forward(150)', 't = turtle.Turtle()', 't.shape("turtle")', 't.circle(150)', 't.color("red")'],
+      clue: '🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요.<br>🎨 색과 굵기는 <b>그리기 전에</b> 정해요. 동그라미(circle)와 빨강(red)은 이번에 쓰지 않아요.',
+      done: '굵은 노란 별 완성! ⭐ 코드 한 줄 한 줄이 무슨 일을 하는지 알고 골랐어요. <b>다음 →</b>' },
+    orange: { kind: 'goal', challenge: true, title: '🏆 도전! 주황 세모 칠하기 🔺',
+      talk: '이번엔 <b>완전히 빈 화면</b>이에요! 흐린 그림처럼 <b>속이 꽉 찬 주황색 세모</b>를 그려 보세요.<br>맨 먼저 <b>거북이부터 데려와야</b> 해요. 세모의 변은 <b>120</b>, 색 이름은 <code>"orange"</code>예요.<br>방법은 여러 가지! 그림만 똑같으면 성공이에요.',
+      start: '',
+      solution: PT + code('t.color("orange")', FILL, 'for i in range(3):', '    t.forward(120)', '    t.left(120)', END) + '\n', fullAnswer: true,
+      bank: ['t.shape("turtle")', 't.end_fill()', 'import turtle', 't = turtle.Turtle()', 't.color("orange")', 't.begin_fill()', 'for i in range( ):', 't.forward( )', 't.left( )'],
+      must: [['import turtle', '그림은 똑같아요! 👍 그런데 맨 위에 <b>거북이 상자를 여는 줄</b>이 빠졌어요.'], ['t.shape("turtle")', '그림은 똑같아요! 👍 그런데 화살표가 그리고 있어요. <b>거북이 모양으로 바꾸는 줄</b>을 넣어 보세요.']],
+      clue: '🐢 첫머리 3줄: <b>상자 열기 → 거북이 꺼내기 → 거북이 모양</b> 순서예요.<br>🪣 색칠은 <b>시작 → 그리기 → 끝</b>! 세모는 <b>3번</b> 반복하고 <b>360 ÷ 3</b> 만큼 돌아요.',
+      done: '빈 화면에서 색칠까지 스스로 만들어 냈어요! 🏆 <b>다음 →</b>' },
+  };
+  delete E[2].review; delete E[2].challenge; delete E[2].insert;
   Object.assign(E[2], {
-    insert: [
-      [6, { kind: 'order', title: '🧩 순서 맞추기! 파란 네모',
-        talk: '<b>속이 꽉 찬 파란 네모</b>를 그리는 코드인데, 줄이 뒤죽박죽 섞였어요! 😵<br>▲▼ 를 눌러 순서를 맞춰 보세요. 안쪽으로 들어간 줄은 <b>for 줄 바로 아래</b>에 있어야 해요.',
-        lines: ['t.color("blue")', 't.begin_fill()', 'for i in range(4):', '    t.forward(100)', '    t.left(90)', 't.end_fill()'],
-        shuffle: [5, 3, 1, 2, 0, 4],
-        clue: '🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요. 그리기 전에 시작하고, 다 그린 뒤에 끝내요.',
-        done: '순서를 스스로 찾아냈어요! 🧩 컴퓨터는 <b>쓴 순서대로만</b> 해요. <b>다음 →</b>' }],
-    ],
-    challenge: {
-      kind: 'goal', title: '주황 세모 칠하기 🔺',
-      talk: '<b>빈 화면</b>에서 시작해요! 흐린 그림처럼 <b>속이 꽉 찬 주황색 세모</b>를 그려 보세요.<br>세모의 변은 <b>120</b>이에요. 색 이름은 <code>"orange"</code>!',
-      start: PT + '\n',
-      solution: PT + code('t.color("orange")', 't.begin_fill()', 'for i in range(3):', '    t.forward(120)', '    t.left(120)', 't.end_fill()') + '\n',
-      bank: ['t.color("orange")', 't.begin_fill()', 't.end_fill()', 'for i in range( ):', 't.forward( )', 't.left( )'],
-      clue: '🔺 세모는 <b>3번</b> 반복하고 <b>360 ÷ 3</b> 만큼 돌아요.<br>🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서! 색은 맨 처음에 정해요.',
-    },
+    showPrep: true,
+    // 원래 미션에서 남긴 것: 0 미리보기, 1 펜 색깔, 2 다른 색 골라 보기(실험), 3 펜 굵게, 4 색칠 시작, 7 자유
+    rebuild: b => [b[0], b[1], b[2], b[3], P2.write, b[4], P2.apple, P2.green, P2.star, P2.blue, P2.pick, P2.orange, b[7]],
   });
 
   // ---------- 3차시 ----------
