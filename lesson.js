@@ -11,7 +11,53 @@
 
 (function () {
   const L = LESSON;
-  const MISSIONS = L.missions;
+  const lineKey = l => l.given !== undefined ? l.given : l.type !== undefined ? l.type : l.blank;
+
+  // ---------- 추가 내용(extras.js) 끼워 넣기: 복습·도전 미션, 생각 힌트, 기억해서 쓰는 빈칸 ----------
+  const X = (window.LESSON_EXTRAS || {})[L.num] || {};
+  const cloneLines = ls => JSON.parse(JSON.stringify(ls));
+  // lines 안에서 원래 줄(match)을 찾아 새 줄로 바꾼다. 상자·접힌 코드 안까지 찾는다.
+  function applyEdits(lines, edits) {
+    (edits || []).forEach(([match, repl]) => {
+      const swap = ls => ls.some((l, i) => {
+        if (l.box) return swap(l.box);
+        if (l.fold) return swap(l.fold);
+        if (l.prep || lineKey(l) !== match) return false;
+        const next = Object.assign({}, repl);
+        if (next.note === undefined) next.note = l.note;
+        ls[i] = next;
+        return true;
+      });
+      if (!swap(lines)) console.error('extras.js: ' + L.num + '차시에서 줄을 찾지 못했어요 → ' + match);
+    });
+    return lines;
+  }
+  const BASE = L.missions;
+  // 도전 미션은 "바꾸기 전" 원래 코드로 만든다
+  let challenge = null;
+  if (X.challenge) {
+    const c = X.challenge;
+    challenge = {
+      challenge: true, title: '🏆 도전! ' + c.title, talk: c.talk, clue: c.clue, hint: c.hint,
+      lines: c.lines || applyEdits(cloneLines(BASE[c.base].lines), c.edits),
+      done: c.done || '힌트 없이 해냈어요! 🏆 이게 진짜 실력이에요. <b>다음 →</b>',
+    };
+  }
+  Object.keys(X.recall || {}).forEach(i => {
+    BASE[i].lines = applyEdits(cloneLines(BASE[i].lines), X.recall[i]);
+    BASE[i].talk = BASE[i].talk.replace(/직접 써 보세요/g, '빈칸을 채워 보세요');
+  });
+  Object.keys(X.talk || {}).forEach(i => { BASE[i].talk = X.talk[i]; });
+  Object.keys(X.clues || {}).forEach(i => { BASE[i].clue = X.clues[i]; });
+  const MISSIONS = BASE.slice();
+  if (challenge) MISSIONS.splice(MISSIONS.length - 1, 0, challenge);
+  if (X.review) {
+    const r = X.review;
+    MISSIONS.splice(1, 0, {
+      review: true, title: '🔁 복습: ' + r.title, talk: r.talk, clue: r.clue, hint: r.hint, lines: r.lines,
+      done: r.done || '잘 기억하고 있네요! 👏 이제 오늘 공부를 시작해요. <b>다음 →</b>',
+    });
+  }
   const WORDS = L.words || [];
   const PREP = [
     { given: 'import turtle', note: '거북이 상자 열기' },
@@ -151,6 +197,52 @@
     }).join('');
     return `<div class="code-card">${walk(lines)}</div>`;
   }
+  // ---------- 2단계 힌트 ----------
+  // 1단계 "생각 힌트"(clue): 정답은 말하지 않고 실마리만 준다.
+  // 2단계 "정답 힌트"(hint): 서로 다른 답으로 몇 번 틀린 뒤에만 열린다.
+  const fixedBlanks = m => {
+    const out = [];
+    if (m.lines) flatten(m.lines).forEach(f => (f.l.answers || []).forEach(a => { if (a !== null && a !== '*') out.push({ ans: a, note: f.l.note }); }));
+    return out;
+  };
+  const NEED_WRONG = m => m.challenge ? 3 : 2;   // 정답 힌트가 열리는 틀린 횟수
+  const CLUE_AFTER = m => m.challenge ? 1 : 0;   // 생각 힌트가 열리는 틀린 횟수
+  function maskWord(a) {
+    const show = a.length <= 2 ? 0 : a.length <= 5 ? 1 : a.length <= 9 ? 2 : 3;
+    return a.split('').map((c, i) => i < show || c === '_' ? c : '▢').join(' ');
+  }
+  function autoClue(m) {
+    const fb = fixedBlanks(m);
+    return fb.map((b, i) => {
+      const who = (fb.length > 1 ? `<b>${i + 1}번째 빈칸</b>` : '<b>빈칸</b>') + (b.note ? ` (${b.note})` : '');
+      if (/^-?\d+$/.test(b.ans)) return `${who}: 숫자예요. 위 설명과 줄 옆의 설명을 다시 읽어 보세요.`;
+      if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(b.ans)) return `${who}: 기호나 짧은 식이에요. 위 설명을 다시 읽어 보세요.`;
+      return `${who}: <code class="mask">${maskWord(b.ans)}</code> 영어 ${b.ans.length}글자`;
+    }).join('<br>');
+  }
+  function autoHint(m) {
+    const fb = fixedBlanks(m);
+    return '정답: ' + fb.map((b, i) => (fb.length > 1 ? `${i + 1}번째 빈칸 ` : '') + `<b>${esc(b.ans)}</b>`).join(', ') + '<br>왜 그런지 한 번 생각해 보고 써요!';
+  }
+  const hasHint = m => m.kind === undefined && fixedBlanks(m).length > 0;
+  function hintHtml(m) {
+    const wrong = state[cur].wrong || 0;
+    if (wrong < CLUE_AFTER(m)) return '🏆 도전 미션은 <b>먼저 스스로</b> 해 봐요!<br>한 번 실행해 본 뒤에도 어려우면 생각 힌트가 열려요.';
+    let html = `<div class="clue-label">💡 생각 힌트</div>${m.clue || autoClue(m)}`;
+    const left = NEED_WRONG(m) - wrong;
+    if (left > 0) html += `<div class="answer-lock">🔒 그래도 어려우면 <b>${left}번</b> 더 도전해 보세요. 그러면 정답 힌트가 열려요.</div>`;
+    else if (!state[cur].answerOpen) html += `<div class="answer-lock"><button class="big-btn soft" id="answer-btn" type="button">🔑 정답 힌트 열기</button></div>`;
+    else html += `<div class="answer-open"><div class="clue-label">🔑 정답 힌트</div>${m.hint || autoHint(m)}</div>`;
+    return html;
+  }
+  function drawHint(m) {
+    const box = $('hint');
+    if (!box) return;
+    box.innerHTML = hintHtml(m);
+    const ab = $('answer-btn');
+    if (ab) ab.onclick = () => { state[cur].answerOpen = true; drawHint(m); };
+  }
+
   const moreLines = m => (m.noPrep ? [] : [{ prep: true }]).concat(m.before || [], ...Array(state[cur].count).fill(m.pair));
 
   // 지금 화면의 입력값으로 진짜 파이썬 코드를 만든다
@@ -184,7 +276,7 @@
     const m = MISSIONS[cur];
     const last = cur === MISSIONS.length - 1;
     let gateFrom = null;
-    let html = `<div class="mission-num">미션 ${cur + 1} / ${MISSIONS.length}</div><h2 class="mission-title">${m.title}</h2><div class="talk">${m.talk}</div>`;
+    let html = `<div class="mission-num">미션 ${cur + 1} / ${MISSIONS.length}${m.challenge ? ' <span class="tag challenge">스스로 해결하기</span>' : m.review ? ' <span class="tag review">지난 시간 기억하기</span>' : ''}</div><h2 class="mission-title">${m.title}</h2><div class="talk">${m.talk}</div>`;
     if (m.words) html += `<div class="words">${WORDS.slice(0, 4).map(wordCard).join('')}</div>`;
     if (m.chips) html += `<div class="chips">${m.chips.map(([c, mm]) => `<div class="chip"><div class="c">${esc(c)}</div><div class="m">${mm}</div></div>`).join('')}</div>`;
     if (m.sentence) html += `<div class="sentence">${m.sentence}</div>`;
@@ -203,9 +295,9 @@
       html += codeCardHtml(m.lines);
       html += `<div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button>`;
       if (m.quick) html += m.quick.map(q => `<button class="big-btn quick" data-quick="${q}" type="button">${q}</button>`).join('');
-      if (m.hint) html += `<button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button>`;
+      if (hasHint(m)) html += `<button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button>`;
       html += `</div>`;
-      if (m.hint) html += `<div class="hint-box" id="hint">${m.hint}</div>`;
+      if (hasHint(m)) html += `<div class="hint-box" id="hint"></div>`;
     }
     // 설명을 읽기 전에 코드부터 따라 치지 않도록, 코드 카드는 "읽었어요!"를 눌러야 열린다
     if (gateFrom !== null) {
@@ -259,7 +351,7 @@
       runMission();
     });
     const hb = $('hint-btn');
-    if (hb) hb.onclick = () => $('hint').classList.toggle('open');
+    if (hb) { drawHint(m); hb.onclick = () => $('hint').classList.toggle('open'); }
 
     if (m.kind === 'more') {
       const draw = () => {
@@ -298,7 +390,7 @@
         f.l.answers.forEach((ans, k) => {
           const b = missionEl.querySelector(`[data-blank="${i}"][data-k="${k}"]`);
           const v = b.value.trim();
-          const good = ans === null ? /^-?\d+$/.test(v) : ans === '*' ? v && !v.includes('"') : v === ans;
+          const good = ans === null ? /^-?\d+$/.test(v) : ans === '*' ? v && !v.includes('"') : v.replace(/\s+/g, '') === ans;
           if (ans !== null && ans !== '*') b.classList.toggle('correct', !!good);
           b.classList.toggle('wrong', !good);
           if (!good) { ok = false; blankMiss = true; }
@@ -310,8 +402,18 @@
 
   function runMission() {
     const m = MISSIONS[cur];
-    const hintTip = m.hint ? ' 어려우면 <b>💡 힌트 보기</b>!' : '';
+    const hintTip = hasHint(m) ? ' 어려우면 <b>💡 힌트 보기</b>!' : '';
     const check = checkAnswers(m);
+    // 빈칸을 다 채우고 틀렸을 때만, 그리고 지난번과 다른 답일 때만 "도전 1번"으로 센다
+    const blanks = [...missionEl.querySelectorAll('.blank')];
+    if (check.blankMiss && blanks.length && blanks.every(b => b.value.trim())) {
+      const sig = blanks.map(b => b.value.trim()).join('\u0001');
+      if (sig !== state[cur].lastWrong) {
+        state[cur].lastWrong = sig;
+        state[cur].wrong = (state[cur].wrong || 0) + 1;
+        drawHint(m);
+      }
+    }
     if ([...missionEl.querySelectorAll('.blank')].some(b => !b.value.trim())) {
       feedback('빈칸을 먼저 채워 볼까요? ✏️ <b>빨간 빈칸</b>에 알맞은 걸 써 보세요.' + hintTip, false);
       return;
@@ -328,9 +430,15 @@
         else feedback('조금만 더! 🤔 <b>빨간 빈칸</b>을 다시 확인해 보세요.' + hintTip, false);
         return;
       }
+      // 자유 미션: 처음 코드 그대로면 아직 "나만의 작품"이 아니다
+      if (m.kind === 'free' && !state[cur].done && text.replace(/\s+/g, '') === m.code.replace(/\s+/g, '')) {
+        feedback('실행은 잘 됐어요! 👍 이제 <b>숫자나 색깔을 하나라도 바꿔서</b> 다시 실행해 보세요. 그래야 나만의 작품이에요!', false);
+        return;
+      }
       state[cur].done = true;
-      feedback(m.done, true);
+      feedback(m.challenge && state[cur].answerOpen ? '해냈어요! 👏 다음 차시 도전 미션은 <b>정답 힌트 없이</b> 풀어 봐요. <b>다음 →</b>' : m.done, true);
       updateNav();
+      if (cur === MISSIONS.length - 1) bindComplete();
     }, msg => {
       // 빈칸이 틀려서 난 에러면, 에러 대신 빈칸을 가리킨다
       if (check.blankMiss) feedback('빈칸을 다시 확인해 볼까요? ✏️ <b>빨간 빈칸</b>을 고쳐 보세요.' + hintTip, false);
@@ -460,8 +568,14 @@
     const btn = $('complete-btn');
     if (!btn) return;
     if (chapterDone) { btn.textContent = '✔️ 완료했어요!'; btn.classList.add('done'); }
+    const ready = chapterDone || state[MISSIONS.length - 1].done;
+    btn.classList.toggle('not-yet', !ready);
     btn.onclick = () => {
       if (chapterDone) return;
+      if (!state[MISSIONS.length - 1].done) {
+        feedback('아직이에요! ✏️ 코드를 <b>내 마음대로 바꾸고 ▶ 실행하기</b>를 눌러야 완료할 수 있어요.', false);
+        return;
+      }
       markChapterComplete(L.num);
       chapterDone = true; bindComplete();
     };
@@ -469,5 +583,6 @@
 
   // 테스트할 때 콘솔에서 쓸 수 있게
   window.lessonGo = go;
+  window.lessonMissions = MISSIONS;
   render();
 })();
