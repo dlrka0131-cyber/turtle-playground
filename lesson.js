@@ -136,7 +136,7 @@
     let n = 0;
     while (n < t.length && n < target.length && t[n] === target[n]) n++;
     if (n === t.length) {
-      if (n === 0) return { ok: false, n, msg: '👆 위 글자를 보고 그대로 따라 쳐요.' };
+      if (n === 0) return { ok: false, n, msg: '👆 흐린 글씨를 보고 그대로 따라 써요.' };
       const c = target[n];
       return { ok: false, n, msg: '👍 잘하고 있어요! 다음 글자: <b>' + (CHAR_NAME[c] || esc(c)) + '</b>' };
     }
@@ -149,18 +149,21 @@
     }
     return { ok: false, n, msg: `🔍 <b>${n + 1}번째</b> 글자가 달라요: <b>${a === ' ' ? '띄어쓰기' : esc(a)}</b> 대신 <b>${CHAR_NAME[b] || esc(b)}</b>` };
   }
-  function targetHtml(target, n) {
-    return `<span class="ok">${esc(target.slice(0, n))}</span>` +
-      (n < target.length ? `<span class="next">${esc(target[n] === ' ' ? ' ' : target[n])}</span><span class="rest">${esc(target.slice(n + 1))}</span>` : '');
-  }
+  // 직접 쓰기 줄의 정답: @ 자리에는 학생이 쓴 숫자를 넣어서 비교한다
+  const writeTarget = (tpl, typed) => tpl.replace(/@/g, (typed.match(/-?\d+/) || ['100'])[0]);
 
   // ---------- 코드 카드 ----------
   function lineHtml(l, idx) {
     const note = l.note ? `<span class="note">${l.note}</span>` : '';
     if (l.given !== undefined) return `<div class="cline given"><span class="code">${esc(l.given) || '&nbsp;'}</span>${note}</div>`;
+    // 따라 쓰기: 진짜 코드가 흐린 글씨로 깔려 있고, 그 위에 쓰면 진해진다 (붙여넣기는 막는다)
     if (l.type !== undefined) return `<div class="cline"><div class="type-wrap">
-        <div class="target-row" data-tr="${idx}">${targetHtml(l.type, 0)}</div>
-        <input class="type-input" data-type="${idx}" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="✏️ 위 글자를 똑같이 쳐 보세요">
+        <div class="ghost-wrap"><div class="ghost" data-tr="${idx}">${esc(l.type)}</div>
+        <input class="type-input" data-type="${idx}" autocomplete="off" spellcheck="false" autocapitalize="off" aria-label="흐린 글씨를 따라 써 보세요"></div>
+        <div class="type-hint" data-th="${idx}"></div></div>${note}</div>`;
+    // 직접 쓰기: 보여 주는 글자 없이 줄 전체를 스스로 쓴다. @ 자리는 아무 숫자나 된다
+    if (l.write !== undefined) return `<div class="cline"><div class="type-wrap">
+        <div class="ghost-wrap"><input class="type-input" data-write="${idx}" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="${l.placeholder || '✏️ 직접 써 보세요'}"></div>
         <div class="type-hint" data-th="${idx}"></div></div>${note}</div>`;
     if (l.blank !== undefined) {
       let k = 0;
@@ -208,7 +211,7 @@
     if (m.lines) flatten(m.lines).forEach(f => (f.l.answers || []).forEach(a => { if (a !== null && a !== '*') out.push({ ans: a, note: f.l.note }); }));
     return out;
   };
-  const isGoal = m => m.kind === 'goal' || m.kind === 'order';
+  const isGoal = m => m.kind === 'goal' || m.kind === 'order' || m.kind === 'pick';
   const NEED_WRONG = m => m.challenge || isGoal(m) ? 3 : 2;   // 정답 힌트가 열리는 틀린 횟수
   const CLUE_AFTER = m => m.challenge || isGoal(m) ? 1 : 0;   // 생각 힌트가 열리는 틀린 횟수
   function maskWord(a) {
@@ -253,6 +256,7 @@
   // 지금 화면의 입력값으로 진짜 파이썬 코드를 만든다
   function composeCode(m) {
     if (m.kind === 'free' || m.kind === 'goal') return { text: $('free-code').value, mine: [] };
+    if (m.kind === 'pick') return { text: pickCode(m, (st, i) => state[cur].slots[i] || ''), mine: [] };
     if (m.kind === 'predict') return { text: (m.noPrep ? '' : PREP_TEXT) + m.code + '\n', mine: [] };
     if (m.kind === 'order') return { text: (m.noPrep ? '' : PREP_TEXT) + state[cur].order.map(i => m.lines[i]).join('\n') + '\n', mine: [] };
     if (m.kind === 'preview') return { text: L.preview, mine: [] };
@@ -262,6 +266,7 @@
       const l = f.l;
       let text = l.given;
       if (l.type !== undefined) { text = missionEl.querySelector(`[data-type="${i}"]`).value.trim(); mine.push(i); }
+      if (l.write !== undefined) { text = missionEl.querySelector(`[data-write="${i}"]`).value.trim(); mine.push(i); }
       if (l.blank !== undefined) {
         let k = 0;
         text = l.blank.replace(/@/g, () => missionEl.querySelector(`[data-blank="${i}"][data-k="${k++}"]`).value.trim() || '0');
@@ -303,6 +308,11 @@
       if (m.bank) html += `<div class="bank"><span class="bank-label">🧩 단어 버튼 (누르면 써져요)</span>${m.bank.map(b => `<button class="bank-btn" data-bank="${esc(b).replace(/"/g, '&quot;')}" type="button">${esc(b)}</button>`).join('')}</div>`;
       html += `<textarea class="free-editor" id="free-code" spellcheck="false"></textarea>
         <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="free-reset" type="button">↺ 처음 코드로</button><button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button></div>
+        <div class="hint-box" id="hint"></div>`;
+    } else if (m.kind === 'pick') {
+      html += `<div class="pick-list" id="pick-list"></div>
+        <div class="bank"><span class="bank-label">🧩 한글 설명에 맞는 코드를 <b>순서대로</b> 골라 눌러요. 잘못 넣은 줄은 눌러서 비워요.</span>${m.bank.map(b => `<button class="bank-btn" data-pick="${esc(b).replace(/"/g, '&quot;')}" type="button">${esc(b)}</button>`).join('')}</div>
+        <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button></div>
         <div class="hint-box" id="hint"></div>`;
     } else if (m.kind === 'order') {
       html += `<div class="order-list" id="order-list"></div>
@@ -357,9 +367,28 @@
       const target = flatten(m.lines)[i].l.type;
       inp.addEventListener('input', () => {
         const r = compare(inp.value, target);
-        missionEl.querySelector(`[data-tr="${i}"]`).innerHTML = targetHtml(target, r.ok ? target.length : r.n);
+        // 이미 쓴 만큼은 흐린 글씨를 숨겨서, 내가 쓴 진한 글씨만 보이게 한다
+        const typedLen = inp.value.length;
+        missionEl.querySelector(`[data-tr="${i}"]`).innerHTML = `<span class="hid">${esc(target.slice(0, typedLen))}</span>${esc(target.slice(typedLen))}`;
+        inp.classList.toggle('bad', !r.ok && r.n < typedLen);
         const hint = missionEl.querySelector(`[data-th="${i}"]`);
         hint.innerHTML = inp.value ? r.msg : '';
+        hint.classList.toggle('good', r.ok);
+        inp.classList.toggle('correct', r.ok);
+      });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') runMission(); });
+    });
+    missionEl.querySelectorAll('.type-input').forEach(inp => {
+      ['paste', 'drop'].forEach(ev => inp.addEventListener(ev, e => e.preventDefault()));
+    });
+    missionEl.querySelectorAll('[data-write]').forEach(inp => {
+      const i = +inp.dataset.write;
+      const tpl = flatten(m.lines)[i].l.write;
+      inp.addEventListener('input', () => {
+        const r = compare(inp.value, writeTarget(tpl, inp.value));
+        const hint = missionEl.querySelector(`[data-th="${i}"]`);
+        // 다 맞았거나, 틀린 글자가 있을 때만 알려 준다 (쓰는 도중에는 다음 글자를 알려 주지 않는다)
+        hint.innerHTML = r.ok ? r.msg : (inp.value && r.n < inp.value.trim().length ? r.msg : '');
         hint.classList.toggle('good', r.ok);
         inp.classList.toggle('correct', r.ok);
       });
@@ -424,6 +453,22 @@
         $('run').disabled = false;
       });
     }
+    if (m.kind === 'pick') {
+      const st = state[cur];
+      if (!st.slots) st.slots = m.steps.map(() => null);
+      const draw = () => {
+        const next = st.slots.indexOf(null);
+        $('pick-list').innerHTML = m.steps.map((step, i) => `<div class="pick-row${i === next ? ' next' : ''}" data-slot="${i}">
+          <span class="pick-ko">${'<i class="ind"></i>'.repeat(step.indent || 0)}${step.ko}</span>
+          <code class="${st.slots[i] ? 'filled' : ''}">${st.slots[i] ? esc(st.slots[i]) : '?'}</code></div>`).join('');
+        $('pick-list').querySelectorAll('[data-slot]').forEach(r => r.onclick = () => { st.slots[+r.dataset.slot] = null; draw(); });
+      };
+      draw();
+      missionEl.querySelectorAll('[data-pick]').forEach(bt => bt.onclick = () => {
+        const at = st.slots.indexOf(null);
+        if (at >= 0) { st.slots[at] = bt.dataset.pick; draw(); }
+      });
+    }
     if (m.kind === 'order') {
       const st = state[cur];
       // 처음에는 섞어서 보여 준다 (뒤집은 순서. shuffle 로 직접 정할 수도 있다)
@@ -453,6 +498,10 @@
     let ok = true, typeMiss = false, blankMiss = false;
     flatten(m.lines).forEach((f, i) => {
       if (f.l.type !== undefined && !compare(missionEl.querySelector(`[data-type="${i}"]`).value, f.l.type).ok) { ok = false; typeMiss = true; }
+      if (f.l.write !== undefined) {
+        const v = missionEl.querySelector(`[data-write="${i}"]`).value;
+        if (!/\d/.test(v) || !compare(v, writeTarget(f.l.write, v)).ok) { ok = false; typeMiss = true; }
+      }
       if (f.l.blank !== undefined) {
         f.l.answers.forEach((ans, k) => {
           const b = missionEl.querySelector(`[data-blank="${i}"][data-k="${k}"]`);
@@ -485,6 +534,10 @@
       feedback('빈칸을 먼저 채워 볼까요? ✏️ <b>빨간 빈칸</b>에 알맞은 걸 써 보세요.' + hintTip, false);
       return;
     }
+    if (m.kind === 'pick' && state[cur].slots.includes(null)) {
+      feedback('아직 <b>?</b> 로 남은 줄이 있어요! 🧩 한글 설명에 맞는 코드를 골라 모두 채워 보세요.', false);
+      return;
+    }
     const { text, mine } = composeCode(m);
     showFullCode(text, mine);
     runPython(text).then(() => {
@@ -499,11 +552,12 @@
       }
       if (isGoal(m)) {
         // exact: 그림이 아니라 줄 순서 자체가 답인 순서 맞추기 (거북이 데려오기 3줄)
-        const verdict = m.exact ? { ok: state[cur].order.every((li, pos) => li === pos) } : matchGoal(m);
+        const verdict = m.kind === 'pick' ? { ok: m.steps.every((st, i) => state[cur].slots[i] === st.code) }
+          : m.exact ? { ok: state[cur].order.every((li, pos) => li === pos) } : matchGoal(m);
         const missed = !verdict.ok ? null : (m.must || []).find(([word]) => !text.includes(word));
         if (!verdict.ok || missed) {
           if (text !== state[cur].lastWrong) { state[cur].lastWrong = text; state[cur].wrong = (state[cur].wrong || 0) + 1; drawHint(m); }
-          feedback(missed ? missed[1] : m.fail ? m.fail : (verdict.close ? '거의 다 왔어요! 🔍 ' : '아직 목표 그림과 달라요! 🔍 ') + '<b>흐린 그림</b>과 내 그림을 비교해 보세요. 어디가 다른가요?' + ((state[cur].wrong || 0) >= 1 ? ' 어려우면 <b>💡 힌트 보기</b>!' : ''), false);
+          feedback(missed ? missed[1] : m.fail ? m.fail : m.kind === 'pick' ? '아직 달라요! 🔍 <b>한글 설명</b>과 내가 고른 <b>코드</b>를 한 줄씩 짝지어 보세요. 어느 줄이 안 맞나요?' : (verdict.close ? '거의 다 왔어요! 🔍 ' : '아직 목표 그림과 달라요! 🔍 ') + '<b>흐린 그림</b>과 내 그림을 비교해 보세요. 어디가 다른가요?' + ((state[cur].wrong || 0) >= 1 ? ' 어려우면 <b>💡 힌트 보기</b>!' : ''), false);
           return;
         }
       }
@@ -512,7 +566,7 @@
         return;
       }
       if (!check.ok) {
-        if (check.typeMiss) feedback('거의 다 왔어요! ✏️ 노란 글자 힌트를 보고 <b>위 글자와 똑같이</b> 고쳐 봐요.', false);
+        if (check.typeMiss) feedback('거의 다 왔어요! ✏️ 줄 아래 <b>노란 글자 힌트</b>를 보고 고쳐 봐요.', false);
         else feedback('조금만 더! 🤔 <b>빨간 빈칸</b>을 다시 확인해 보세요.' + hintTip, false);
         return;
       }
@@ -607,7 +661,7 @@
     if (s.includes('NameError') && !/=\s*turtle\.Turtle\(\)/.test(code)) return '🐢 거북이를 아직 안 데려왔어요! 맨 위에 <b>거북이 데려오기 3줄</b>이 있어야 해요. (상자 열기 → 거북이 만들기 → 거북이 모양)';
     if (s.includes('NameError')) return '🔤 모르는 이름이에요! <b>철자</b>와 <b>큰 글자/작은 글자</b>를 확인해 보세요. (t 는 작은 글자!)' + line;
     if (/ParseError|SyntaxError|TokenError/.test(s)) return '✏️ 글자가 하나 빠졌거나 더 있어요! <b>괄호 ( )</b>, <b>따옴표 " "</b>, <b>두 점 :</b> 을 확인해 보세요.' + line;
-    return '앗! 에러가 났어요 😅 위 글자와 똑같은지 다시 확인해 보세요.' + line;
+    return '앗! 에러가 났어요 😅 글자가 빠지거나 틀린 곳이 없는지 다시 확인해 보세요.' + line;
   }
 
   const askEl = $('ask'), askInput = $('ask-input');
@@ -656,7 +710,8 @@
 
   // ---------- 목표 그림: 정답 코드를 몰래 돌려 흐린 그림으로 깔고, 내 그림과 비교한다 ----------
   const PREP_TEXT = PREP.map(p => p.given).join('\n') + '\n';
-  const solutionOf = m => m.kind === 'order' ? (m.noPrep ? '' : PREP_TEXT) + m.lines.join('\n') + '\n' : m.solution;
+  const pickCode = (m, get) => (m.noPrep ? '' : PREP_TEXT) + m.steps.map((st, i) => '    '.repeat(st.indent || 0) + get(st, i)).join('\n') + '\n';
+  const solutionOf = m => m.kind === 'pick' ? pickCode(m, st => st.code) : m.kind === 'order' ? (m.noPrep ? '' : PREP_TEXT) + m.lines.join('\n') + '\n' : m.solution;
   const CELL = 6;
   // 거북이 모양(맨 위 층)은 빼고, 그려진 선·색만 한 장으로 모은다
   function capture(boxId) {
@@ -731,7 +786,8 @@
           stage.style.backgroundImage = `url(${faded.toDataURL()})`;
           stage.style.backgroundSize = '100% 100%';
           stage.style.backgroundRepeat = 'no-repeat';
-          if (!$('mycanvas')) stage.innerHTML = '<div class="goal-note">👻 흐린 그림이 <b>목표</b>예요.<br>똑같이 그려지게 만들어 보세요!</div>';
+          // 앞 미션에서 그린 그림이 남아 있으면 목표 그림과 헷갈리므로 무대를 비운다
+          stage.innerHTML = '<div class="goal-note">👻 흐린 그림이 <b>목표</b>예요.<br>똑같이 그려지게 만들어 보세요!</div>';
         }
         finish();
       }, err => { console.error('목표 그림을 만들지 못했어요', err && err.toString()); finish(); });
