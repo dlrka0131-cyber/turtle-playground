@@ -37,7 +37,7 @@
   let challenge = null;
   if (X.challenge) {
     const c = X.challenge;
-    challenge = {
+    challenge = c.kind ? Object.assign({ challenge: true, done: '스스로 만들어 냈어요! 🏆 이게 진짜 코딩이에요. <b>다음 →</b>' }, c, { title: '🏆 도전! ' + c.title }) : {
       challenge: true, title: '🏆 도전! ' + c.title, talk: c.talk, clue: c.clue, hint: c.hint,
       lines: c.lines || applyEdits(cloneLines(BASE[c.base].lines), c.edits),
       done: c.done || '힌트 없이 해냈어요! 🏆 이게 진짜 실력이에요. <b>다음 →</b>',
@@ -50,6 +50,8 @@
   Object.keys(X.talk || {}).forEach(i => { BASE[i].talk = X.talk[i]; });
   Object.keys(X.clues || {}).forEach(i => { BASE[i].clue = X.clues[i]; });
   const MISSIONS = BASE.slice();
+  // insert: [[원래 미션 번호, 새 미션]] — 그 미션 "바로 앞"에 끼워 넣는다
+  (X.insert || []).forEach(([at, m]) => MISSIONS.splice(MISSIONS.indexOf(BASE[at]), 0, m));
   if (challenge) MISSIONS.splice(MISSIONS.length - 1, 0, challenge);
   if (X.review) {
     const r = X.review;
@@ -205,8 +207,9 @@
     if (m.lines) flatten(m.lines).forEach(f => (f.l.answers || []).forEach(a => { if (a !== null && a !== '*') out.push({ ans: a, note: f.l.note }); }));
     return out;
   };
-  const NEED_WRONG = m => m.challenge ? 3 : 2;   // 정답 힌트가 열리는 틀린 횟수
-  const CLUE_AFTER = m => m.challenge ? 1 : 0;   // 생각 힌트가 열리는 틀린 횟수
+  const isGoal = m => m.kind === 'goal' || m.kind === 'order';
+  const NEED_WRONG = m => m.challenge || isGoal(m) ? 3 : 2;   // 정답 힌트가 열리는 틀린 횟수
+  const CLUE_AFTER = m => m.challenge || isGoal(m) ? 1 : 0;   // 생각 힌트가 열리는 틀린 횟수
   function maskWord(a) {
     const show = a.length <= 2 ? 0 : a.length <= 5 ? 1 : a.length <= 9 ? 2 : 3;
     return a.split('').map((c, i) => i < show || c === '_' ? c : '▢').join(' ');
@@ -224,15 +227,16 @@
     const fb = fixedBlanks(m);
     return '정답: ' + fb.map((b, i) => (fb.length > 1 ? `${i + 1}번째 빈칸 ` : '') + `<b>${esc(b.ans)}</b>`).join(', ') + '<br>왜 그런지 한 번 생각해 보고 써요!';
   }
-  const hasHint = m => m.kind === undefined && fixedBlanks(m).length > 0;
+  const hasHint = m => isGoal(m) || (m.kind === undefined && fixedBlanks(m).length > 0);
+  const goalAnswer = m => '이렇게 하면 돼요. 보고 <b>직접</b> 고쳐 보세요!<pre class="answer-code">' + esc(solutionOf(m).replace(PREP_TEXT, '').trim()) + '</pre>';
   function hintHtml(m) {
     const wrong = state[cur].wrong || 0;
-    if (wrong < CLUE_AFTER(m)) return '🏆 도전 미션은 <b>먼저 스스로</b> 해 봐요!<br>한 번 실행해 본 뒤에도 어려우면 생각 힌트가 열려요.';
-    let html = `<div class="clue-label">💡 생각 힌트</div>${m.clue || autoClue(m)}`;
+    if (wrong < CLUE_AFTER(m)) return '🏆 이 미션은 <b>먼저 스스로</b> 해 봐요!<br>한 번 실행해 본 뒤에도 어려우면 생각 힌트가 열려요.';
+    let html = `<div class="clue-label">💡 생각 힌트</div>${m.clue || (isGoal(m) ? '흐린 목표 그림과 내 그림을 나란히 비교해 보세요. 어디서부터 달라지나요?' : autoClue(m))}`;
     const left = NEED_WRONG(m) - wrong;
     if (left > 0) html += `<div class="answer-lock">🔒 그래도 어려우면 <b>${left}번</b> 더 도전해 보세요. 그러면 정답 힌트가 열려요.</div>`;
     else if (!state[cur].answerOpen) html += `<div class="answer-lock"><button class="big-btn soft" id="answer-btn" type="button">🔑 정답 힌트 열기</button></div>`;
-    else html += `<div class="answer-open"><div class="clue-label">🔑 정답 힌트</div>${m.hint || autoHint(m)}</div>`;
+    else html += `<div class="answer-open"><div class="clue-label">🔑 정답 힌트</div>${m.hint || (isGoal(m) ? goalAnswer(m) : autoHint(m))}</div>`;
     return html;
   }
   function drawHint(m) {
@@ -247,7 +251,9 @@
 
   // 지금 화면의 입력값으로 진짜 파이썬 코드를 만든다
   function composeCode(m) {
-    if (m.kind === 'free') return { text: $('free-code').value, mine: [] };
+    if (m.kind === 'free' || m.kind === 'goal') return { text: $('free-code').value, mine: [] };
+    if (m.kind === 'predict') return { text: PREP_TEXT + m.code + '\n', mine: [] };
+    if (m.kind === 'order') return { text: PREP_TEXT + state[cur].order.map(i => m.lines[i]).join('\n') + '\n', mine: [] };
     if (m.kind === 'preview') return { text: L.preview, mine: [] };
     const flat = flatten(m.kind === 'more' ? moreLines(m) : m.lines);
     const mine = [];
@@ -286,6 +292,21 @@
     } else if (m.kind === 'more') {
       gateFrom = html.length;
       html += `<div id="more-card"></div><div class="actions"><button class="big-btn more" id="more" type="button">➕ 한 번 더!</button><button class="big-btn soft" id="more-reset" type="button">↺ 처음부터</button></div>`;
+    } else if (m.kind === 'predict') {
+      const st = state[cur];
+      html += `<pre class="read-code">${esc(m.code)}</pre>
+        <div class="q-label">🤔 ${m.question} <span>실행하기 전에 먼저 골라 보세요!</span></div>
+        <div class="options">${m.options.map((o, i) => `<button class="option${st.pick === i ? ' picked' : ''}" data-opt="${i}" type="button"${st.done ? ' disabled' : ''}>${o}</button>`).join('')}</div>
+        <div class="actions"><button class="big-btn run" id="run" type="button"${st.pick === undefined ? ' disabled' : ''}>▶ 실행해서 확인하기</button></div>`;
+    } else if (m.kind === 'goal') {
+      if (m.bank) html += `<div class="bank"><span class="bank-label">🧩 단어 버튼 (누르면 써져요)</span>${m.bank.map(b => `<button class="bank-btn" data-bank="${esc(b).replace(/"/g, '&quot;')}" type="button">${esc(b)}</button>`).join('')}</div>`;
+      html += `<textarea class="free-editor" id="free-code" spellcheck="false"></textarea>
+        <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="free-reset" type="button">↺ 처음 코드로</button><button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button></div>
+        <div class="hint-box" id="hint"></div>`;
+    } else if (m.kind === 'order') {
+      html += `<div class="order-list" id="order-list"></div>
+        <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="hint-btn" type="button">💡 힌트 보기</button></div>
+        <div class="hint-box" id="hint"></div>`;
     } else if (m.kind === 'free') {
       if (m.colors !== false) html += `<div class="color-cards">${COLORS.map(([en, ko, hex]) => `<span class="color-card"><i style="background:${hex}"></i><code>"${en}"</code> ${ko}</span>`).join('')}</div>`;
       html += `<textarea class="free-editor" id="free-code" spellcheck="false"></textarea>
@@ -311,6 +332,7 @@
     if (last) html += `<div class="actions"><button id="complete-btn" class="complete-btn" type="button">✅ ${L.num}차시 완료!</button></div>`;
     missionEl.innerHTML = html;
     missionEl.scrollTop = 0;
+    if (isGoal(m)) showGoal(m); else clearGoal();
     bindMission(m);
     renderDots();
     updateNav();
@@ -362,14 +384,52 @@
       $('more').onclick = () => { if (state[cur].count < m.need) state[cur].count++; draw(); runMission(); };
       $('more-reset').onclick = () => { state[cur].count = 1; draw(); runMission(); };
     }
-    if (m.kind === 'free') {
+    if (m.kind === 'free' || m.kind === 'goal') {
+      const first = m.kind === 'goal' ? m.start : m.code;
       const ta = $('free-code');
-      ta.value = state[cur].code || m.code;
+      ta.value = state[cur].code || first;
       ta.addEventListener('input', () => { state[cur].code = ta.value; });
       ta.addEventListener('keydown', e => {
         if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('    ', ta.selectionStart, ta.selectionEnd, 'end'); state[cur].code = ta.value; }
+        // 줄을 바꾸면 윗줄의 띄어쓰기를 그대로 잇고, 윗줄이 : 로 끝나면 4칸 더 들여 쓴다
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          const line = ta.value.slice(0, ta.selectionStart).split('\n').pop();
+          const indent = line.match(/^ */)[0] + (/:\s*$/.test(line) ? '    ' : '');
+          ta.setRangeText('\n' + indent, ta.selectionStart, ta.selectionEnd, 'end'); state[cur].code = ta.value;
+        }
       });
-      $('free-reset').onclick = () => { ta.value = m.code; state[cur].code = m.code; };
+      $('free-reset').onclick = () => { ta.value = first; state[cur].code = first; };
+      // 단어 버튼: 커서 자리에 써 준다. 괄호 안이 비어 있으면 커서를 괄호 안에 둔다
+      missionEl.querySelectorAll('[data-bank]').forEach(bt => bt.onclick = () => {
+        const text = bt.dataset.bank.replace('( )', '()');
+        const at = ta.selectionStart;
+        ta.setRangeText(text, at, ta.selectionEnd, 'end');
+        const hole = bt.dataset.bank.indexOf('( )');
+        if (hole >= 0) ta.setSelectionRange(at + hole + 1, at + hole + 1);
+        state[cur].code = ta.value; ta.focus();
+      });
+    }
+    if (m.kind === 'predict') {
+      missionEl.querySelectorAll('[data-opt]').forEach(o => o.onclick = () => {
+        state[cur].pick = +o.dataset.opt;
+        missionEl.querySelectorAll('[data-opt]').forEach(x => x.classList.toggle('picked', x === o));
+        $('run').disabled = false;
+      });
+    }
+    if (m.kind === 'order') {
+      const st = state[cur];
+      // 처음에는 섞어서 보여 준다 (뒤집은 순서. shuffle 로 직접 정할 수도 있다)
+      if (!st.order) st.order = m.shuffle ? m.shuffle.slice() : m.lines.map((_, i) => m.lines.length - 1 - i);
+      const draw = () => {
+        $('order-list').innerHTML = st.order.map((li, pos) => `<div class="order-row">
+          <span class="order-btns"><button data-up="${pos}" type="button"${pos === 0 ? ' disabled' : ''}>▲</button><button data-down="${pos}" type="button"${pos === st.order.length - 1 ? ' disabled' : ''}>▼</button></span>
+          <code>${esc(m.lines[li]).replace(/^ +/, sp => '<i class="ind"></i>'.repeat(sp.length / 4))}</code></div>`).join('');
+        const swap = (a, b) => { [st.order[a], st.order[b]] = [st.order[b], st.order[a]]; draw(); };
+        $('order-list').querySelectorAll('[data-up]').forEach(b => b.onclick = () => swap(+b.dataset.up, +b.dataset.up - 1));
+        $('order-list').querySelectorAll('[data-down]').forEach(b => b.onclick = () => swap(+b.dataset.down, +b.dataset.down + 1));
+      };
+      draw();
     }
   }
 
@@ -421,6 +481,24 @@
     const { text, mine } = composeCode(m);
     showFullCode(text, mine);
     runPython(text).then(() => {
+      if (m.kind === 'predict') {
+        const right = state[cur].pick === m.answer;
+        if (!state[cur].done) state[cur].right = right;
+        state[cur].done = true;
+        missionEl.querySelectorAll('[data-opt]').forEach((o, i) => { o.disabled = true; o.classList.toggle('answer', i === m.answer); });
+        feedback((right ? '🎯 <b>예측 성공!</b> ' : '🙈 <b>예측과 달랐어요!</b> 오른쪽 결과를 잘 보세요.<br>') + m.why + ' <b>다음 →</b>', right);
+        updateNav();
+        return;
+      }
+      if (isGoal(m)) {
+        const verdict = matchGoal(m);
+        const missed = !verdict.ok ? null : (m.must || []).find(([word]) => !text.includes(word));
+        if (!verdict.ok || missed) {
+          if (text !== state[cur].lastWrong) { state[cur].lastWrong = text; state[cur].wrong = (state[cur].wrong || 0) + 1; drawHint(m); }
+          feedback(missed ? missed[1] : (verdict.close ? '거의 다 왔어요! 🔍 ' : '아직 목표 그림과 달라요! 🔍 ') + '<b>흐린 그림</b>과 내 그림을 비교해 보세요. 어디가 다른가요?' + ((state[cur].wrong || 0) >= 1 ? ' 어려우면 <b>💡 힌트 보기</b>!' : ''), false);
+          return;
+        }
+      }
       if (m.kind === 'more' && state[cur].count < m.need) {
         feedback(`좋아요! 🙌 <b>➕ 한 번 더!</b>를 ${m.need - state[cur].count}번 더 눌러 보세요.`, true);
         return;
@@ -442,6 +520,11 @@
     }, msg => {
       // 빈칸이 틀려서 난 에러면, 에러 대신 빈칸을 가리킨다
       if (check.blankMiss) feedback('빈칸을 다시 확인해 볼까요? ✏️ <b>빨간 빈칸</b>을 고쳐 보세요.' + hintTip, false);
+      else if (m.kind === 'order') {
+        // 줄 순서가 틀려서 난 에러는 "글자가 틀렸다"가 아니라 "순서가 틀렸다"고 알려 준다
+        if (text !== state[cur].lastWrong) { state[cur].lastWrong = text; state[cur].wrong = (state[cur].wrong || 0) + 1; drawHint(m); }
+        feedback('이 순서로는 거북이가 이해하지 못해요! 🧩 <b>안쪽으로 들어간 줄</b>은 for 줄 <b>바로 아래</b>에 모여 있어야 해요.', false);
+      }
       else feedback(msg, false);
     });
   }
@@ -560,6 +643,98 @@
       },
       err => { $('stage-status').textContent = '😵 에러'; throw friendlyError(err, code); }
     );
+  }
+
+  // ---------- 목표 그림: 정답 코드를 몰래 돌려 흐린 그림으로 깔고, 내 그림과 비교한다 ----------
+  const PREP_TEXT = PREP.map(p => p.given).join('\n') + '\n';
+  const solutionOf = m => m.kind === 'order' ? PREP_TEXT + m.lines.join('\n') + '\n' : m.solution;
+  const CELL = 6;
+  // 거북이 모양(맨 위 층)은 빼고, 그려진 선·색만 한 장으로 모은다
+  function capture(boxId) {
+    const cs = [...document.querySelectorAll('#' + boxId + ' canvas')].filter(c => c.style.zIndex !== '3' && c.style.display !== 'none');
+    if (!cs.length) return null;
+    const out = document.createElement('canvas');
+    out.width = cs[0].width; out.height = cs[0].height;
+    const g = out.getContext('2d');
+    cs.forEach(c => g.drawImage(c, 0, 0));
+    return out;
+  }
+  // 그림을 작은 칸으로 나눠, 칸마다 "잉크가 있나"와 평균 색을 적어 둔다
+  function toGrid(cv) {
+    const w = cv.width, h = cv.height, d = cv.getContext('2d').getImageData(0, 0, w, h).data;
+    const cols = Math.ceil(w / CELL), rows = Math.ceil(h / CELL), cells = new Array(cols * rows).fill(null);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const p = (y * w + x) * 4;
+      if (d[p + 3] < 60) continue;
+      const k = Math.floor(y / CELL) * cols + Math.floor(x / CELL);
+      const c = cells[k] || (cells[k] = [0, 0, 0, 0]);
+      c[0] += d[p]; c[1] += d[p + 1]; c[2] += d[p + 2]; c[3]++;
+    }
+    return { cols, rows, cells };
+  }
+  function compareGrids(ref, mine) {
+    if (ref.cols !== mine.cols || ref.rows !== mine.rows) return { ok: false };
+    const near = (g, k) => {
+      const x = k % g.cols, y = (k - x) / g.cols;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && yy >= 0 && xx < g.cols && yy < g.rows && g.cells[yy * g.cols + xx]) return true;
+      }
+      return false;
+    };
+    let refN = 0, covered = 0, mineN = 0, valid = 0, both = 0, sameColor = 0;
+    ref.cells.forEach((c, k) => { if (c) { refN++; if (near(mine, k)) covered++; } });
+    mine.cells.forEach((c, k) => {
+      if (!c) return;
+      mineN++; if (near(ref, k)) valid++;
+      const r = ref.cells[k];
+      if (r) { both++; if (Math.abs(c[0] / c[3] - r[0] / r[3]) + Math.abs(c[1] / c[3] - r[1] / r[3]) + Math.abs(c[2] / c[3] - r[2] / r[3]) < 150) sameColor++; }
+    });
+    if (!refN || !mineN) return { ok: false };
+    const cover = covered / refN, clean = valid / mineN, color = both ? sameColor / both : 0;
+    return { ok: cover >= 0.94 && clean >= 0.94 && color >= 0.8, close: cover >= 0.7 && clean >= 0.7, cover, clean, color };
+  }
+  let goalRef = null, goalToken = 0;
+  function clearGoal() { goalToken++; goalRef = null; stage.style.backgroundImage = ''; }
+  function showGoal(m) {
+    clearGoal();
+    const token = goalToken, run = $('run');
+    if (run) run.disabled = true;
+    stopOldTimers().then(() => {
+      if (token !== goalToken) return;
+      const w = Math.max(320, stage.clientWidth), h = Math.max(300, stage.clientHeight);
+      const holder = document.createElement('div');
+      holder.id = 'goalcanvas';
+      holder.style.cssText = `position:absolute;left:-99999px;top:0;width:${w}px;height:${h}px`;
+      document.body.appendChild(holder);
+      Sk.configure({ output: () => {}, read: builtinRead, __future__: Sk.python3 });
+      Sk.TurtleGraphics = Sk.TurtleGraphics || {};
+      Object.assign(Sk.TurtleGraphics, { target: 'goalcanvas', width: w, height: h, animate: false });
+      const finish = () => { Sk.TurtleGraphics.animate = true; holder.remove(); if (token === goalToken && $('run')) $('run').disabled = false; };
+      return Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, PRELUDE + 'turtle.tracer(0)\n' + solutionOf(m) + '\nturtle.update()\n', true)).then(() => {
+        const cv = capture('goalcanvas');
+        if (cv && token === goalToken) {
+          goalRef = toGrid(cv);
+          const faded = document.createElement('canvas');
+          faded.width = cv.width; faded.height = cv.height;
+          const g = faded.getContext('2d');
+          g.globalAlpha = 0.3; g.drawImage(cv, 0, 0);
+          stage.style.backgroundImage = `url(${faded.toDataURL()})`;
+          stage.style.backgroundSize = '100% 100%';
+          stage.style.backgroundRepeat = 'no-repeat';
+          if (!$('mycanvas')) stage.innerHTML = '<div class="goal-note">👻 흐린 그림이 <b>목표</b>예요.<br>똑같이 그려지게 만들어 보세요!</div>';
+        }
+        finish();
+      }, err => { console.error('목표 그림을 만들지 못했어요', err && err.toString()); finish(); });
+    });
+  }
+  // 창 크기가 바뀌면 무대 크기도 바뀌므로 목표 그림을 다시 만든다
+  let resizeTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (isGoal(MISSIONS[cur])) showGoal(MISSIONS[cur]); }, 400); });
+  function matchGoal() {
+    const cv = capture('mycanvas');
+    if (!goalRef || !cv) return { ok: false };
+    return compareGrids(goalRef, toGrid(cv));
   }
 
   // ---------- 완료 버튼 (이 브라우저에 저장) ----------

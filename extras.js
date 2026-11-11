@@ -29,12 +29,6 @@
         8: '⭐ 뾰족한 끝이 5개! 도는 숫자는 세모(120)보다 커요. <b>140과 150 사이</b>에서 찾아보세요.',
         9: '⬡ 육각형은 변이 6개예요. <b>360 ÷ 6 = ?</b>',
       },
-      challenge: {
-        title: '십각형 만들기 🔟',
-        talk: '변이 <b>10개</b>인 십각형을 그려 봐요.<br>세모·육각형 때처럼 <b>몇 번</b> 반복하고 <b>얼마나</b> 돌지 스스로 정해요!',
-        lines: [P, G('t.color("green")'), B('for i in range(@):', ['10'], '몇 번?'), BOX(G('t.forward(50)'), B('t.left(@)', ['36'], '얼마나 돌까?'))],
-        clue: '🔟 반복은 변의 수만큼! 도는 숫자는 한 바퀴를 변의 수로 나눠요. <b>360 ÷ 10 = ?</b>',
-      },
     },
     2: {
       review: {
@@ -43,22 +37,12 @@
         lines: [P, B('for i in range(@):', ['4'], '몇 번?'), BOX(G('t.forward(100)'), B('t.@(90)', ['left'], '왼쪽으로 돌기'))],
         clue: '⬜ 네모는 변이 몇 개죠? 그만큼 반복해요.<br>↩️ "왼쪽"은 영어로 <b>l</b> 로 시작하는 4글자예요.',
       },
-      challenge: {
-        title: '주황 세모 칠하기 🔺',
-        talk: '속이 꽉 찬 <b>주황색 세모</b>를 만들어요.<br>색칠 <b>시작</b>과 <b>끝</b>, 그리고 세모의 <b>반복 횟수</b>까지 스스로!',
-        lines: [P, G('t.color("orange")'), B('t.@()', ['begin_fill'], '색칠 시작!'), B('for i in range(@):', ['3'], '몇 번?'), BOX(G('t.forward(120)'), G('t.left(120)')), B('t.@()', ['end_fill'], '색칠 끝!')],
-      },
     },
     3: {
       review: {
         title: '색칠하기',
         talk: '지난 시간에 배운 <b>색칠 시작</b>과 <b>색칠 끝</b>을 기억하나요? 빨간 동그라미를 칠해 보세요.',
         lines: [P, G('t.color("red")'), B('t.@()', ['begin_fill'], '색칠 시작!'), G('t.circle(60)'), B('t.@()', ['end_fill'], '색칠 끝!')],
-      },
-      challenge: {
-        title: '떨어진 동그라미 3개 ⚪⚪⚪',
-        talk: '동그라미 <b>3개</b>를 선으로 이어지지 않게 그려요.<br>동그라미를 그린 뒤 펜을 <b>들고</b> 걸어가서, 다시 <b>내려야</b> 해요.',
-        lines: [P, START, B('for i in range(@):', ['3'], '몇 개?'), BOX(G('t.circle(30)'), B('t.@()', ['penup'], '펜 들기'), G('t.forward(120)'), B('t.@()', ['pendown'], '펜 내리기'))],
       },
     },
     4: {
@@ -67,24 +51,12 @@
         talk: '가운데가 <b>끊어진 선</b>을 그려요. 지난 시간에 배운 펜 <b>들기</b>와 <b>내리기</b>를 기억해 보세요!',
         lines: [P, START, G('t.forward(100)'), B('t.@()', ['penup'], '펜 들기'), G('t.forward(100)'), B('t.@()', ['pendown'], '펜 내리기'), G('t.forward(100)')],
       },
-      challenge: {
-        title: '별 명령 만들기 ⭐',
-        talk: '이번엔 <b>star</b> 라는 새 명령을 만들고, <b>두 번</b> 불러서 별 2개를 그려요.',
-        lines: [P, G('t.color("gold")'), B('@ star():', ['def'], '"star" 명령 만들기'), BOX(G('for i in range(5):'), BOX(G('t.forward(100)'), G('t.left(144)'))),
-          B('@()', ['star'], '별 1'), G('t.penup()'), G('t.forward(150)'), G('t.pendown()'), B('@()', ['star'], '별 2')],
-      },
     },
     5: {
       review: {
         title: '나만의 명령',
         talk: '지난 시간에 <b>새 명령을 만드는 단어</b>와 <b>명령을 부르는 방법</b>을 배웠어요. 기억해서 채워 보세요!',
         lines: [P, B('@ square():', ['def'], '"square" 명령 만들기'), BOX(G('for i in range(4):'), BOX(G('t.forward(100)'), G('t.left(90)'))), B('@()', ['square'], '네모 명령 실행!')],
-      },
-      challenge: {
-        title: '꽃잎 6장 🌺',
-        talk: '꽃잎이 <b>6장</b>인 빨간 꽃을 피워요.<br>몇 번 반복하고, 한 번에 얼마씩 돌아야 딱 한 바퀴가 될까요?',
-        lines: [P, G('t.color("red")'), G('t.speed(0)'), ...SQUARE, B('for i in range(@):', ['6'], '몇 번?'), BOX(G('square()'), B('t.left(@)', ['60'], '얼마나 돌까?'))],
-        clue: '🌺 반복은 꽃잎 수만큼! 도는 숫자는 <b>360 ÷ 꽃잎 수</b>예요.',
       },
       clues: {
         4: '🌸 한 번에 45씩 돌아요. 45를 <b>몇 번</b> 더해야 한 바퀴 360이 될까요?',
@@ -566,4 +538,133 @@
       },
     },
   };
+
+  // ====================================================================================
+  // 생각하는 미션 (1~5차시)
+  //   predict  코드를 읽고 결과를 먼저 고른 뒤 실행해서 확인한다
+  //   goal     흐린 목표 그림과 똑같이 그려지게 코드를 고치거나(고치기) 처음부터 쓴다(만들기).
+  //            글자가 아니라 "그려진 그림"으로 맞았는지 본다. 방법이 달라도 그림이 같으면 통과.
+  //   order    섞인 줄을 ▲▼ 로 옮겨 순서를 맞춘다. 역시 그림으로 확인한다.
+  // ====================================================================================
+  const E = window.LESSON_EXTRAS;
+  const PT = 'import turtle\nt = turtle.Turtle()\nt.shape("turtle")\n';
+  const code = (...lines) => lines.join('\n');
+  const predict = (title, talk, src, question, options, answer, why) => ({ kind: 'predict', title: '🔮 예측! ' + title, talk, code: src, question, options, answer, why });
+  const fix = (title, talk, broken, fixed, clue) => ({ kind: 'goal', title: '🔧 고치기! ' + title, talk, start: PT + broken + '\n', solution: PT + fixed + '\n', clue,
+    done: '버그를 찾아 고쳤어요! 🔧 코딩에서 제일 중요한 힘이에요. <b>다음 →</b>' });
+  const SQ = code('def square():', '    for i in range(4):', '        t.forward(100)', '        t.left(90)');
+
+  // ---------- 1차시 ----------
+  Object.assign(E[1], {
+    insert: [
+      [5, predict('어떤 선이 그려질까?', '코드를 <b>눈으로 따라가며</b> 거북이가 어떻게 움직일지 상상해 보세요. 거북이는 처음에 <b>오른쪽</b>을 보고 있어요.',
+        code('t.forward(100)', 't.left(90)', 't.forward(100)'), '거북이가 그린 선은 어떤 모양일까요?',
+        ['┘ 오른쪽으로 갔다가 <b>위로</b> 꺾인 선', '┐ 오른쪽으로 갔다가 <b>아래로</b> 꺾인 선', '━ 꺾이지 않은 긴 선'], 0,
+        'left 는 <b>거북이가 보는 방향에서</b> 왼쪽이에요. 오른쪽을 보던 거북이가 왼쪽으로 돌면 위를 봐요.')],
+      [7, predict('숫자가 바뀌면?', '방금 만든 네모는 <code>t.forward(100)</code> 이었어요. 이번엔 숫자 하나가 달라요.',
+        code('for i in range(4):', '    t.forward(50)', '    t.left(90)'), '아까 네모와 비교하면 어떤 그림이 나올까요?',
+        ['더 <b>작은</b> 네모', '더 <b>큰</b> 네모', '네모가 아니라 <b>세모</b>'], 0,
+        'forward 의 숫자는 <b>변의 길이</b>예요. 반복 횟수(4)와 도는 숫자(90)가 그대로라서 모양은 여전히 네모!')],
+      [10, fix('세모가 이상해요', '세모를 그리려고 했는데 이상한 모양이 나왔어요! 😵<br>먼저 <b>▶ 실행하기</b>로 무엇이 잘못됐는지 보고, <b>한 군데만</b> 고쳐서 흐린 그림과 똑같이 만들어 보세요.',
+        code('for i in range(3):', '    t.forward(100)', '    t.left(90)'), code('for i in range(3):', '    t.forward(100)', '    t.left(120)'),
+        '🔺 변의 수와 길이는 맞아요. <b>도는 숫자</b>를 보세요. 90은 어떤 도형의 숫자였죠?')],
+    ],
+    challenge: {
+      kind: 'goal', title: '계단 만들기 🪜',
+      talk: '이번엔 <b>빈 화면</b>에서 시작해요! 흐린 그림처럼 <b>계단 3칸</b>을 그려 보세요.<br>한 칸은 <b>앞으로 50 → 위로 50</b> 이에요. 방법은 여러 가지! 그림만 똑같으면 성공이에요.',
+      start: PT + '\n',
+      solution: PT + code('for i in range(3):', '    t.forward(50)', '    t.left(90)', '    t.forward(50)', '    t.right(90)') + '\n',
+      bank: ['t.forward( )', 't.left( )', 't.right( )', 'for i in range( ):'],
+      clue: '🪜 계단 한 칸을 말로 해 보세요: <b>앞으로 → 왼쪽으로 돌기 → 앞으로 → 오른쪽으로 돌기</b>.<br>이 네 줄을 몇 번 하면 3칸이 될까요? (반복 상자 안의 줄은 앞에 띄어쓰기 4칸!)',
+    },
+  });
+
+  // ---------- 2차시 ----------
+  Object.assign(E[2], {
+    insert: [
+      [6, predict('어디까지 칠해질까?', '동그라미를 <b>두 개</b> 그려요. 색칠 시작과 끝이 어디에 있는지 잘 보세요.',
+        code('t.color("red")', 't.begin_fill()', 't.circle(40)', 't.end_fill()', 't.circle(80)'), '빨갛게 <b>칠해지는</b> 동그라미는 어느 것일까요?',
+        ['<b>작은</b> 동그라미만', '<b>큰</b> 동그라미만', '<b>둘 다</b>'], 0,
+        '색은 <b>begin_fill 과 end_fill 사이</b>에서 그린 것만 칠해져요. 큰 동그라미는 end_fill 뒤에 그려서 선만 남아요.')],
+      [6, { kind: 'order', title: '🧩 순서 맞추기! 파란 네모',
+        talk: '<b>속이 꽉 찬 파란 네모</b>를 그리는 코드인데, 줄이 뒤죽박죽 섞였어요! 😵<br>▲▼ 를 눌러 순서를 맞춰 보세요. 안쪽으로 들어간 줄은 <b>for 줄 바로 아래</b>에 있어야 해요.',
+        lines: ['t.color("blue")', 't.begin_fill()', 'for i in range(4):', '    t.forward(100)', '    t.left(90)', 't.end_fill()'],
+        shuffle: [5, 3, 1, 2, 0, 4],
+        clue: '🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요. 그리기 전에 시작하고, 다 그린 뒤에 끝내요.',
+        done: '순서를 스스로 찾아냈어요! 🧩 컴퓨터는 <b>쓴 순서대로만</b> 해요. <b>다음 →</b>' }],
+    ],
+    challenge: {
+      kind: 'goal', title: '주황 세모 칠하기 🔺',
+      talk: '<b>빈 화면</b>에서 시작해요! 흐린 그림처럼 <b>속이 꽉 찬 주황색 세모</b>를 그려 보세요.<br>세모의 변은 <b>120</b>이에요. 색 이름은 <code>"orange"</code>!',
+      start: PT + '\n',
+      solution: PT + code('t.color("orange")', 't.begin_fill()', 'for i in range(3):', '    t.forward(120)', '    t.left(120)', 't.end_fill()') + '\n',
+      bank: ['t.color("orange")', 't.begin_fill()', 't.end_fill()', 'for i in range( ):', 't.forward( )', 't.left( )'],
+      clue: '🔺 세모는 <b>3번</b> 반복하고 <b>360 ÷ 3</b> 만큼 돌아요.<br>🪣 색칠은 <b>시작 → 그리기 → 끝</b> 순서! 색은 맨 처음에 정해요.',
+    },
+  });
+
+  // ---------- 3차시 ----------
+  Object.assign(E[3], {
+    insert: [
+      [4, predict('선은 몇 개?', '거북이가 걸어가는 동안 펜을 <b>들었다 내렸다</b> 해요. 펜이 내려가 있을 때만 선이 그려져요.',
+        code('t.forward(60)', 't.penup()', 't.forward(60)', 't.pendown()', 't.forward(60)', 't.penup()', 't.forward(60)'), '떨어진 선은 모두 몇 개 그려질까요?',
+        ['1개', '2개', '4개'], 1,
+        '네 번 걸었지만 펜이 내려가 있던 건 <b>첫 번째와 세 번째</b>뿐이에요.')],
+      [5, fix('선이 하나뿐이에요', '<b>떨어진 선 2개</b>를 그리려고 했는데 선이 하나만 나와요! 😵<br>▶ 실행해서 확인하고, <b>빠진 줄 하나</b>를 알맞은 자리에 넣어 보세요.',
+        code('t.forward(100)', 't.penup()', 't.forward(50)', 't.forward(100)'), code('t.forward(100)', 't.penup()', 't.forward(50)', 't.pendown()', 't.forward(100)'),
+        '✏️ 펜을 <b>든 뒤에 다시 내린 적</b>이 있나요? 두 번째 선을 그리기 <b>바로 전</b>에 필요해요.')],
+    ],
+    challenge: {
+      kind: 'goal', title: '떨어진 동그라미 3개 ⚪⚪⚪',
+      talk: '흐린 그림처럼 <b>동그라미 3개</b>를 선으로 이어지지 않게 그려 보세요.<br>동그라미 크기는 <b>30</b>, 다음 자리까지는 <b>120</b>만큼 걸어가요. 반복을 써도 되고 안 써도 돼요!',
+      start: PT + 't.penup(); t.goto(-150, 0); t.pendown()\n\n',
+      solution: PT + 't.penup(); t.goto(-150, 0); t.pendown()\n' + code('for i in range(3):', '    t.circle(30)', '    t.penup()', '    t.forward(120)', '    t.pendown()') + '\n',
+      bank: ['t.circle( )', 't.penup()', 't.forward( )', 't.pendown()', 'for i in range( ):'],
+      clue: '⚪ 동그라미 하나를 말로 해 보세요: <b>동그라미 → 펜 들기 → 걸어가기 → 펜 내리기</b>.<br>이걸 3번 하면 돼요.',
+    },
+  });
+
+  // ---------- 4차시 ----------
+  Object.assign(E[4], {
+    insert: [
+      [3, predict('명령을 만들기만 하면?', '<b>square</b> 명령을 만들었어요. 그런데 아래쪽을 잘 보세요!',
+        code(SQ, '', 't.forward(50)'), '무엇이 그려질까요?',
+        ['네모와 짧은 선', '<b>짧은 선 하나</b>만', '아무것도 안 그려져요'], 1,
+        '명령은 <b>만들기만 해서는</b> 실행되지 않아요. <code>square()</code> 라고 <b>불러야</b> 그려져요!')],
+      [6, fix('세모가 하나뿐이에요', '<b>세모 2개</b>를 나란히 그리려고 했는데 하나만 나와요! 😵<br>▶ 실행해서 확인하고, <b>빠진 줄 하나</b>를 넣어 보세요.',
+        code('def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)', '', 'triangle()', 't.penup()', 't.forward(120)', 't.pendown()'),
+        code('def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)', '', 'triangle()', 't.penup()', 't.forward(120)', 't.pendown()', 'triangle()'),
+        '🔺 세모 명령을 <b>몇 번 불렀는지</b> 세어 보세요. 자리를 옮긴 뒤에 무엇을 해야 할까요?')],
+    ],
+    challenge: {
+      kind: 'goal', title: '계단 명령 만들기 🪜',
+      talk: '계단 한 칸을 그리는 <b>step</b> 명령을 <b>직접 만들고</b>, 그 명령을 불러서 흐린 그림처럼 <b>계단 4칸</b>을 그려 보세요.<br>한 칸은 <b>앞으로 40 → 위로 40</b> 이에요.',
+      start: PT + '\n',
+      solution: PT + code('def step():', '    t.forward(40)', '    t.left(90)', '    t.forward(40)', '    t.right(90)', '', 'for i in range(4):', '    step()') + '\n',
+      bank: ['def step():', 't.forward( )', 't.left( )', 't.right( )', 'for i in range( ):', 'step()'],
+      must: [['def ', '그림은 똑같아요! 👍 그런데 이번 도전은 <b>def 로 나만의 명령</b>을 만들어서 그려야 해요.']],
+      clue: '🪜 먼저 <b>def step():</b> 아래에 계단 한 칸(앞으로 → 왼쪽 → 앞으로 → 오른쪽)을 넣어요.<br>그다음 맨 앞 칸부터 다시 써서 <b>step()</b> 을 4번 불러요.',
+    },
+  });
+
+  // ---------- 5차시 ----------
+  Object.assign(E[5], {
+    insert: [
+      [4, predict('네모는 몇 개 보일까?', '네모를 <b>8번</b> 그려요. 그런데 한 번에 <b>90</b>씩 돌아요. 90을 몇 번 더하면 한 바퀴(360)일까요?',
+        code(SQ, '', 'for i in range(8):', '    square()', '    t.left(90)'), '다 그리고 나면 화면에 네모가 몇 개 <b>보일까요?</b>',
+        ['8개', '4개', '2개'], 1,
+        '90씩 <b>4번</b>이면 벌써 한 바퀴예요. 나머지 4번은 <b>같은 자리에 겹쳐서</b> 그려요.')],
+      [6, fix('꽃이 덜 피었어요', '<b>꽃잎 8장</b>짜리 꽃을 그리려고 했는데 꽃이 덜 피었어요! 😵<br><b>한 군데만</b> 고쳐서 흐린 그림과 똑같이 만들어 보세요.',
+        code('t.speed(0)', SQ, '', 'for i in range(6):', '    square()', '    t.left(45)'), code('t.speed(0)', SQ, '', 'for i in range(8):', '    square()', '    t.left(45)'),
+        '🌸 45씩 돌아요. 45를 <b>몇 번</b> 더해야 한 바퀴 360이 될까요? 지금은 몇 번 반복하고 있죠?')],
+    ],
+    challenge: {
+      kind: 'goal', title: '세모로 꽃 피우기 🌺',
+      talk: '<b>triangle</b> 명령은 만들어 뒀어요. 이 세모를 <b>6번</b> 돌려 그려서 흐린 그림 같은 꽃을 피워 보세요.<br>한 번에 얼마씩 돌아야 딱 한 바퀴가 될까요?',
+      start: PT + code('t.speed(0)', '', 'def triangle():', '    for i in range(3):', '        t.forward(100)', '        t.left(120)', '', ''),
+      solution: PT + code('t.speed(0)', 'def triangle():', '    for i in range(3):', '        t.forward(100)', '        t.left(120)', 'for i in range(6):', '    triangle()', '    t.left(60)') + '\n',
+      bank: ['for i in range( ):', 'triangle()', 't.left( )'],
+      clue: '🌺 "세모 그리고 → 조금 돌기"를 6번 반복해요.<br>도는 숫자는 <b>360 ÷ 6</b>!',
+    },
+  });
 })();
