@@ -329,8 +329,8 @@
         <div class="hint-box" id="hint"></div>`;
     } else if (m.kind === 'free') {
       if (m.colors !== false) html += `<div class="color-cards">${COLORS.map(([en, ko, hex]) => `<span class="color-card"><i style="background:${hex}"></i><code>"${en}"</code> ${ko}</span>`).join('')}</div>`;
-      html += `<textarea class="free-editor" id="free-code" spellcheck="false"></textarea>
-        <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="free-reset" type="button">↺ 처음 코드로</button></div>`;
+      html += `<textarea class="free-editor" id="free-code" spellcheck="false" placeholder="${m.placeholder || ''}"></textarea>
+        <div class="actions"><button class="big-btn run" id="run" type="button">▶ 실행하기</button><button class="big-btn soft" id="free-reset" type="button">${m.code === '' ? '🗑️ 모두 지우기' : '↺ 처음 코드로'}</button></div>`;
     } else {
       gateFrom = html.length;
       html += codeCardHtml(m.lines);
@@ -579,6 +579,13 @@
         if (check.typeMiss) feedback('거의 다 왔어요! ✏️ 줄 아래 <b>노란 글자 힌트</b>를 보고 고쳐 봐요.', false);
         else feedback('조금만 더! 🤔 <b>빨간 빈칸</b>을 다시 확인해 보세요.' + hintTip, false);
         return;
+      }
+      // 빈 화면에서 시작하는 자유 미션: 거북이를 직접 데려와서 뭔가 그려야 한다
+      if (m.kind === 'free' && m.code === '') {
+        const lack = !text.includes('import turtle') ? '맨 위에 <b>거북이 상자를 여는 줄</b>이 있어야 해요! 📦'
+          : !text.includes('turtle.Turtle()') ? '<b>거북이를 꺼내는 줄</b>이 있어야 해요! 🐢'
+          : !/\.(forward|fd|backward|circle|goto|stamp|dot)\(/.test(text) ? '실행은 됐는데 아직 <b>아무것도 그리지 않았어요!</b> 🖍️ 거북이에게 움직이는 명령을 시켜 보세요.' : '';
+        if (lack) { feedback(lack, false); return; }
       }
       // 자유 미션: 처음 코드 그대로면 아직 "나만의 작품"이 아니다
       if (m.kind === 'free' && !state[cur].done && text.replace(/\s+/g, '') === m.code.replace(/\s+/g, '')) {

@@ -623,7 +623,7 @@
   Object.assign(E[1], {
     showPrep: true,
     // 원래 미션에서 남긴 것: 0 미리보기, 2 앞으로 가, 4 돌아, 6 반복, 11 자유
-    rebuild: b => [b[0], P1.bring, b[2], P1.write, b[4], P1.square, b[6], P1.small, P1.tri, P1.star, P1.hex, P1.circle, P1.stairs, b[11]],
+    rebuild: b => [b[0], P1.bring, b[2], P1.write, b[4], P1.square, b[6], P1.small, P1.tri, P1.star, P1.hex, P1.circle, P1.stairs, Object.assign({}, b[11], { title: '나만의 그림 만들기 🎨', code: '', placeholder: '여기에 직접 써 보세요!  🐢 거북이 데려오기 3줄부터 시작해요', talk: '이번엔 <b>완전히 빈 화면</b>이에요! 오늘 배운 <b>앞으로, 돌기, 반복</b>으로 <b>내가 그리고 싶은 도형</b>을 마음대로 그려 보세요.<br>맨 먼저 <b>거북이 데려오기 3줄</b>부터 써요. 숫자는 마음대로 정해도 돼요!' })],
   });
 
   // ---------- 2차시: 1차시 방식으로 통째로 다시 짰다 ----------
@@ -690,26 +690,28 @@
   Object.assign(E[2], {
     showPrep: true,
     // 원래 미션에서 남긴 것: 0 미리보기, 1 펜 색깔, 3 펜 굵게, 4 색칠 시작, 7 자유 (2 는 직접 쓰기로 바꿈)
-    rebuild: b => [b[0], b[1], P2.color, b[3], P2.write, b[4], P2.apple, P2.green, P2.star, P2.blue, P2.pick, P2.orange, b[7]],
+    rebuild: b => [b[0], b[1], P2.color, b[3], P2.write, b[4], P2.apple, P2.green, P2.star, P2.blue, P2.pick, P2.orange, Object.assign({}, b[7], { title: '나만의 그림 만들기 🎨', code: '', placeholder: '여기에 직접 써 보세요!  🐢 거북이 데려오기 3줄부터 시작해요', talk: '이번엔 <b>완전히 빈 화면</b>이에요! 오늘 배운 <b>색깔, 굵기, 색칠</b>로 <b>내가 만들고 싶은 그림</b>을 마음대로 그려 보세요.<br>맨 먼저 <b>거북이 데려오기 3줄</b>부터 써요. 색칠은 <b>시작 → 그리기 → 끝</b> 순서예요!' })],
   });
 
   // ---------- 3차시: 1·2차시 방식으로 통째로 다시 짰다 ----------
   // 펜 들기·내리기를 따라 써 보고 → 직접 쓰기 → 조립 → 빠진 줄 고치기 → 점선 조립·바꾸기 →
   // 코드 고르기(징검다리) → 빈 화면에서 만들기로 이어 간다.
   const ST = 't.penup(); t.goto(-250, 0); t.pendown()';   // 왼쪽 끝에서 시작 (goto 는 8차시에 배움)
+  const STN = '거북이를 왼쪽 끝으로 옮기는 줄 (펜을 든 채 옮기고 다시 내려요)';
   const P3 = {
     up: { title: '펜 들기 ⬆️',
       talk: '거북이는 움직이면 <b>늘 선을 그려요.</b> 동그라미를 따로 떨어뜨려 그리려면 선 없이 움직여야 해요!<br>'
-        + '<b>penup</b> 은 <b>"펜을 들어!"</b> 라는 뜻이에요. 펜을 들면 거북이가 움직여도 <b>선이 안 생겨요.</b><br><span class="small">✍️ 종이에서 연필을 떼는 것처럼요. <b>흐린 글씨</b> 위에 따라 써 보세요.</span>',
-      lines: [{ prep: true }, G(ST, '왼쪽 끝으로 (신경 쓰지 마세요)'), G('t.forward(100)', '앞으로 100 (선 그림)'), { type: 't.penup()', note: '펜 들기!' }, G('t.forward(100)', '앞으로 100 (선 없음)')],
+        + '<b>penup</b> 은 <b>"펜을 들어!"</b> 라는 뜻이에요. 펜을 들면 거북이가 움직여도 <b>선이 안 생겨요.</b><br><span class="small">✍️ 종이에서 연필을 떼는 것처럼요. <b>흐린 글씨</b> 위에 따라 써 보세요.</span><br>'
+        + '<span class="small">📍 맨 위 회색 줄은 거북이를 <b>왼쪽 끝으로 옮기는 줄</b>이에요. 펜을 든 채 <b>goto(-250, 0)</b> 자리로 가서 다시 내려요. 그림이 화면 안에 들어오게 하려는 거예요. goto 는 나중에 자세히 배워요!</span>',
+      lines: [{ prep: true }, G(ST, STN), G('t.forward(100)', '앞으로 100 (선 그림)'), { type: 't.penup()', note: '펜 들기!' }, G('t.forward(100)', '앞으로 100 (선 없음)')],
       done: '처음 100은 선이 있고, 나중 100은 선이 없어요! 👀' },
     down: { title: '펜 내리기 ⬇️',
       talk: '펜을 들었으면 다시 <b>내려야</b> 그릴 수 있어요.<br><b>pendown</b> 은 <b>"펜을 내려!"</b> 라는 뜻이에요. 흐린 글씨 위에 따라 써 보세요.',
-      lines: [{ prep: true }, G(ST, '왼쪽 끝으로 (신경 쓰지 마세요)'), G('t.forward(80)', '앞으로 (선 그림)'), G('t.penup()', '펜 들기'), G('t.forward(80)', '앞으로 (선 없음)'), { type: 't.pendown()', note: '펜 내리기!' }, G('t.forward(80)', '앞으로 (선 그림)')],
+      lines: [{ prep: true }, G(ST, STN), G('t.forward(80)', '앞으로 (선 그림)'), G('t.penup()', '펜 들기'), G('t.forward(80)', '앞으로 (선 없음)'), { type: 't.pendown()', note: '펜 내리기!' }, G('t.forward(80)', '앞으로 (선 그림)')],
       done: '선 – 빈칸 – 선! 펜을 들고 내리는 걸 해냈어요! 👏' },
     write: { title: '직접 써 보기 ✏️',
       talk: '이번엔 보여 주는 글씨가 없어요! 아래 줄 설명을 보고 <b>펜을 들고, 내리는 줄</b>을 <b>직접</b> 써 보세요.<br>선 → 빈칸 → 선 모양이 되어야 해요.',
-      lines: [{ prep: true }, G(ST, '왼쪽 끝으로 (신경 쓰지 마세요)'), G('t.forward(80)', '앞으로 (선 그림)'),
+      lines: [{ prep: true }, G(ST, STN), G('t.forward(80)', '앞으로 (선 그림)'),
         { write: 't.penup()', note: '펜을 든다', placeholder: '✏️ 펜을 드는 명령을 직접 써 보세요' }, G('t.forward(80)', '앞으로 (선 없음)'),
         { write: 't.pendown()', note: '펜을 내린다', placeholder: '✏️ 펜을 내리는 명령을 직접 써 보세요' }, G('t.forward(80)', '앞으로 (선 그림)')],
       done: '보지 않고 스스로 썼어요! 👍 <b>들었으면 꼭 내려야</b> 다시 그릴 수 있어요.' },
@@ -727,23 +729,23 @@
       '🪄 두 동그라미 사이에 <b>선이 생긴 곳</b>을 보세요. 그 길을 걷기 <b>전에</b> 펜을 어떻게 해야 했을까요?'),
     dots: { kind: 'goal', title: '🧩 조립하기! 점선 ┄┄',
       talk: '"그리고 → 들고 → 가고 → 내리고"를 <b>10번 반복</b>하면 <b>점선</b>이 돼요! 선 한 칸은 <b>25</b>, 빈 칸도 <b>25</b>예요.<br>버튼을 눌러 흐린 점선처럼 만들어 보세요. <b>같은 버튼</b>은 여러 번 눌러도 돼요.',
-      start: PT + ST + '\n', fullAnswer: false,
-      solution: PT + ST + '\n' + code('for i in range(10):', '    t.forward(25)', '    t.penup()', '    t.forward(25)', '    t.pendown()') + '\n',
+      start: PT + ST + '\nt.pensize(6)\n', fullAnswer: false,
+      solution: PT + ST + '\nt.pensize(6)\n' + code('for i in range(10):', '    t.forward(25)', '    t.penup()', '    t.forward(25)', '    t.pendown()') + '\n',
       bank: ['t.forward(25)', 't.pendown()', 'for i in range( ):', 't.penup()', 't.forward(50)', 't.circle(25)'],
       clue: '┄ 점선 한 칸을 말로 해 보세요: <b>선 그리기 → 펜 들기 → 선 없이 가기 → 펜 내리기</b>. 이걸 몇 번 하면 길 끝까지 갈까요? 반복 줄은 <b>맨 앞</b>이에요.',
       done: '멋진 점선 완성! ┄┄┄ 반복 안에 들고 내리기를 넣었어요. <b>다음 →</b>' },
-    dash: Object.assign(fix('점선을 긴 점선으로', '이번엔 고장 난 게 아니에요! 잘 되는 <b>점선 코드</b>를 <b>바꿔서</b>, 흐린 그림처럼 <b>선은 길게, 빈칸은 짧게</b> 만들어 보세요.<br>숫자 <b>두 군데</b>를 바꿔야 해요. 먼저 ▶ 실행해서 흐린 그림과 비교해 보세요.',
-      code(ST, 'for i in range(10):', '    t.forward(25)', '    t.penup()', '    t.forward(25)', '    t.pendown()'),
-      code(ST, 'for i in range(10):', '    t.forward(40)', '    t.penup()', '    t.forward(10)', '    t.pendown()'),
-      '📏 선을 그리는 칸은 <b>펜을 들기 전</b>의 forward, 빈 칸은 <b>펜을 든 뒤</b>의 forward예요. 흐린 그림에서 선이 몇 배쯤 길고 빈칸이 얼마나 짧은지 보세요.<br>한 칸(선+빈칸)은 모두 <b>50</b>이에요.'),
-      { title: '🔧 바꾸기! 점선을 긴 점선으로', done: '긴 점선 완성! 📏 숫자 두 개가 선과 빈칸의 길이를 정해요. <b>다음 →</b>' }),
+    dash: Object.assign(fix('점선을 점점선으로', '이번엔 고장 난 게 아니에요! 잘 되는 <b>점선 코드</b>를 <b>바꿔서</b>, 흐린 그림처럼 <b>선은 짧게, 빈 칸은 길게</b> 만들어 보세요.<br>선 한 칸은 <b>10</b>, 빈 칸은 <b>40</b>으로 만들어요. 숫자 <b>두 군데</b>를 바꿔야 해요! 어느 숫자가 <b>선</b>이고 어느 숫자가 <b>빈 칸</b>일까요? 먼저 ▶ 실행해서 확인해 보세요.',
+      code(ST, 't.pensize(6)', 'for i in range(10):', '    t.forward(25)', '    t.penup()', '    t.forward(25)', '    t.pendown()'),
+      code(ST, 't.pensize(6)', 'for i in range(10):', '    t.forward(10)', '    t.penup()', '    t.forward(40)', '    t.pendown()'),
+      '📏 선을 그리는 칸은 <b>펜을 들기 전</b>의 forward, 빈 칸은 <b>펜을 든 뒤</b>의 forward예요. 숫자를 하나씩 바꿔 실행해 보고, <b>선이 그려지는 칸</b>이 어느 숫자 때문인지 비교해 보세요.'),
+      { title: '🔧 바꾸기! 점선을 짧은 점선으로', done: '짧은 점선 완성! 📏 숫자 두 개가 선과 빈 칸의 길이를 정해요. <b>다음 →</b>' }),
     pick: { kind: 'pick', noPrep: true, title: '🧩 골라서 만들기! 징검다리 🪨',
       talk: '처음부터 끝까지 코드를 <b>골라서</b> 만들어요.<br>왼쪽 <b>한글 설명</b>을 읽고, 그 일을 하는 <b>코드</b>를 골라 순서대로 눌러 보세요. 돌 하나 그리고 점프하는 걸 5번 반복해요.',
       steps: [
         { ko: '① 거북이 상자 열기', code: 'import turtle' },
         { ko: '② 거북이를 꺼내 t 라고 부르기', code: 't = turtle.Turtle()' },
         { ko: '③ t 를 거북이 모양으로', code: 't.shape("turtle")' },
-        { ko: '④ 왼쪽 끝으로 가기 (신경 쓰지 마세요)', code: ST },
+        { ko: '④ 거북이를 왼쪽 끝으로 옮기기 (펜을 든 채 옮기고 다시 내려요)', code: ST },
         { ko: '⑤ 펜을 회색으로', code: 't.color("gray")' },
         { ko: '⑥ 5번 해 줘!', code: 'for i in range(5):' },
         { ko: '⑦ 색칠 시작!', code: 't.begin_fill()', indent: 1 },
@@ -768,8 +770,8 @@
   delete E[3].review; delete E[3].challenge; delete E[3].insert;
   Object.assign(E[3], {
     showPrep: true,
-    // 원래 미션에서 남긴 것: 0 미리보기, 6 자유 (나머지는 모두 새로 짰다)
-    rebuild: b => [b[0], P3.up, P3.down, P3.write, P3.two, P3.fixDown, P3.fixUp, P3.dots, P3.dash, P3.pick, P3.three, b[6]],
+    // 원래 미션에서 남긴 것: 0 미리보기, 6 자유 (빈 화면으로 바꿈. 나머지는 모두 새로 짰다)
+    rebuild: b => [b[0], P3.up, P3.down, P3.write, P3.two, P3.fixDown, P3.fixUp, P3.dots, P3.dash, P3.pick, P3.three, Object.assign({}, b[6], { title: '나만의 그림 만들기 🎨', code: '', placeholder: '여기에 직접 써 보세요!  🐢 거북이 데려오기 3줄부터 시작해요', talk: '이번엔 <b>완전히 빈 화면</b>이에요! 오늘 배운 <b>펜 들기와 내리기</b>로 <b>떨어진 그림</b>을 마음대로 그려 보세요.<br>맨 먼저 <b>거북이 데려오기 3줄</b>부터 써요. 점선, 징검다리, 떨어진 도형 무엇이든 좋아요!' })],
   });
 
   // ---------- 4차시 ----------
