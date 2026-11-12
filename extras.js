@@ -774,23 +774,98 @@
     rebuild: b => [b[0], P3.up, P3.down, P3.write, P3.two, P3.fixDown, P3.fixUp, P3.dots, P3.dash, P3.pick, P3.three, Object.assign({}, b[6], { title: '나만의 그림 만들기 🎨', code: '', placeholder: '여기에 직접 써 보세요!  🐢 거북이 데려오기 3줄부터 시작해요', talk: '이번엔 <b>완전히 빈 화면</b>이에요! 오늘 배운 <b>펜 들기와 내리기</b>로 <b>떨어진 그림</b>을 마음대로 그려 보세요.<br>맨 먼저 <b>거북이 데려오기 3줄</b>부터 써요. 점선, 징검다리, 떨어진 도형 무엇이든 좋아요!' })],
   });
 
-  // ---------- 4차시 ----------
+  const BOX4 = (size = '80') => ({ box: [G('for i in range(4):', '4번 해 줘!'), BOX(G(`t.forward(${size})`, `앞으로 ${size}`), G('t.left(90)', '왼쪽으로 돌기'))], label: '📦 square 명령 상자 안' });
+  // ---------- 4차시: 1·2·3차시 방식으로 통째로 다시 짰다 ----------
+  // 명령 만들기(def)를 따라 써 보고 → 부르기 → 직접 쓰기 → 조립 → 고치기(괄호·이름·상자 안 숫자) →
+  // 바꾸기 → 코드 고르기 → 빈 화면에서 집 짓기(네모·세모 명령 2개)로 이어 간다.
+  const SL = ST + '\nt.pensize(3)';   // 흐린 그림이 잘 보이게 펜을 조금 굵게 (채점은 같은 칸 비교라 크게 너그러워지지 않는다)
+  const SQ8 = code('def square():', '    for i in range(4):', '        t.forward(80)', '        t.left(90)');
+  const TR8 = code('def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)');
+  const JMP = (n) => code('t.penup()', `t.forward(${n})`, 't.pendown()');
+  const P4 = {
+    def: { title: '새 명령 가르치기 📦',
+      talk: '거북이는 <b>"네모"</b> 라는 말을 몰라요. 그래서 네모를 그리려면 매번 앞으로·돌기를 4번 말해야 했죠.<br>'
+        + '<b>def</b> 는 <b>"새 명령을 만들게!"</b> 라는 뜻이에요. <b>def square():</b> 는 "square(네모) 라는 명령을 만들게" 라는 말이에요.<br>'
+        + '<span class="small">✍️ 노란 상자 안에는 네모 그리는 방법이 들어 있어요. 맨 위 줄을 <b>흐린 글씨</b> 위에 따라 쓰고 ▶ 실행해 보세요.</span>',
+      chips: [['def', '새 명령 만들게'], ['square', '명령 이름'], ['():', '상자 시작!']],
+      lines: [{ prep: true }, { type: 'def square():', note: '"square" 명령 만들기' }, BOX4()],
+      done: '어? <b>아무것도 안 그려졌죠?</b> 🤔<br>거북이에게 네모 그리는 법을 <b>가르쳐 주기만</b> 했기 때문이에요. 이제 "해 봐!" 하고 불러야 해요. <b>다음 →</b>' },
+    call: { title: '명령 부르기 ▶️',
+      talk: '명령을 만들었으면 이제 <b>불러야</b> 해요. 상자 <b>밖</b>에 명령 이름을 쓰면 거북이가 그 명령을 <b>실행</b>해요.<br>이름 뒤의 괄호 <b>()</b> 는 <b>"지금 해!"</b> 라는 뜻이에요. 흐린 글씨 위에 따라 써 보세요.',
+      chips: [['square', '네모 명령'], ['()', '지금 해!']],
+      sentence: '🗣️ "거북아, 네모 그려!"',
+      lines: [{ prep: true }, G('def square():', '"square" 명령 만들기'), BOX4(), { type: 'square()', note: '네모 명령 실행!' }],
+      done: '네모가 나왔어요! ⬜ 한 줄로 네모를 그렸어요! <b>다음 →</b>' },
+    again: { title: '한 번 더 부르기 ✏️',
+      talk: '한 번 만든 명령은 <b>몇 번이든</b> 부를 수 있어요. 이번엔 보여 주는 글씨가 없어요.<br>펜을 들고 점프한 다음, <b>두 번째 네모</b>를 그리는 줄을 <b>직접</b> 써 보세요.',
+      lines: [{ prep: true }, G('def square():', '"square" 명령 만들기'), BOX4(), G('square()', '네모 1'), G('t.penup()', '펜 들기'), G('t.forward(150)', '옆으로 점프'), G('t.pendown()', '펜 내리기'),
+        { write: 'square()', note: '네모 2', placeholder: '✏️ 네모 명령을 부르는 줄을 직접 써 보세요' }],
+      done: '네모가 2개! ⬜⬜ 네모 그리는 4줄을 또 쓸 필요가 없었죠? <b>다음 →</b>' },
+    mine: { title: '내 명령 만들기 🔺',
+      talk: '이번엔 <b>세모 명령</b>이에요. 노란 상자 안에는 세모 그리는 방법이 들어 있어요.<br>이름을 <b>triangle</b> 로 붙여서 <b>명령을 만드는 줄</b>과 <b>명령을 부르는 줄</b>을 둘 다 직접 써 보세요.',
+      lines: [{ prep: true },
+        { write: 'def triangle():', note: '"triangle" 명령 만들기', placeholder: '✏️ 새 명령을 만드는 줄을 직접 써 보세요' },
+        { box: [G('for i in range(3):', '3번 해 줘!'), BOX(G('t.forward(80)', '앞으로 80'), G('t.left(120)', '세모 각도로 돌기'))], label: '📦 triangle 명령 상자 안' },
+        { write: 'triangle()', note: '세모 명령 실행!', placeholder: '✏️ 세모 명령을 부르는 줄을 직접 써 보세요' }],
+      done: '내가 만든 명령으로 세모를 그렸어요! 🔺 이제 거북이는 triangle 이라는 말도 알아요. <b>다음 →</b>' },
+    three: { kind: 'goal', title: '🧩 조립하기! 네모 3개 나란히',
+      talk: '<b>square</b> 명령은 이미 만들어져 있어요. 단어 버튼으로 흐린 그림처럼 <b>네모 3개</b>를 <b>선으로 이어지지 않게</b> 나란히 그려 보세요.<br>네모와 네모 사이는 <b>150</b>만큼 옮겨 가요. 반복을 써도 되고 안 써도 돼요.',
+      start: PT + SL + '\n' + SQ8 + '\n', solution: PT + SL + '\n' + SQ8 + '\n' + code('for i in range(3):', '    square()', '    t.penup()', '    t.forward(150)', '    t.pendown()') + '\n',
+      bank: ['t.pendown()', 'square()', 't.forward(150)', 'for i in range( ):', 't.penup()', 't.forward(80)', 't.left(90)'],
+      clue: '⬜ 네모 하나를 말로 해 보세요: <b>네모 그리기 → 펜 들기 → 옆으로 가기 → 펜 내리기</b>. 이걸 몇 번 하면 3개가 될까요?<br>펜을 든 채로 걸으려면 걷기 <b>전에</b> 무엇을 해야 하죠?',
+      done: '네모 3개 완성! ⬜⬜⬜ 명령을 한 번 만들어 두니 <b>부르기만</b> 하면 돼요. <b>다음 →</b>' },
+    small: Object.assign(fix('네모를 작게', '이번엔 고장 난 게 아니에요! 네모 2개를 그리는 잘 되는 코드예요. 그런데 흐린 그림은 네모가 <b>더 작아요</b> (한 변이 <b>50</b>).<br>▶ 실행해서 확인하고, 코드에서 <b>숫자 한 군데만</b> 바꿔서 두 네모가 <b>모두</b> 작아지게 해 보세요. 어디를 바꿔야 할까요?',
+      code(SL, 'def square():', '    for i in range(4):', '        t.forward(100)', '        t.left(90)', '', 'square()', JMP(150), 'square()'),
+      code(SL, 'def square():', '    for i in range(4):', '        t.forward(50)', '        t.left(90)', '', 'square()', JMP(150), 'square()'),
+      '📏 네모 크기를 정하는 숫자는 <b>네모를 그리는 방법이 들어 있는 상자</b> 안에 있어요. 숫자를 하나씩 바꿔 실행해 보고, 네모가 <b>작아지는 숫자</b>를 찾아보세요.'),
+      { title: '🔧 바꾸기! 네모를 작게', done: '두 네모가 한 번에 작아졌어요! 💪 <b>명령 안</b>의 숫자 <b>하나</b>가 네모 크기를 모두 정해요. 이게 명령 만들기의 힘이에요. <b>다음 →</b>' }),
+    paren: fix('네모가 하나뿐이에요', '<b>네모 2개</b>를 그리려고 했는데 하나만 나와요! 😵 에러는 나지 않아요.<br>▶ 실행해서 확인하고, <b>한 군데만</b> 고쳐서 흐린 그림과 똑같이 만들어 보세요.',
+      code(SL, SQ8, '', 'square()', JMP(150), 'square'),
+      code(SL, SQ8, '', 'square()', JMP(150), 'square()'),
+      '🔔 명령을 <b>부를 때</b> 이름 뒤에 꼭 필요한 것이 있었어요. 두 번째 줄을 첫 번째 줄과 <b>글자 하나하나</b> 비교해 보세요.'),
+    angle: fix('세모가 다 이상해요', '<b>세모 2개</b>를 나란히 그리려고 했는데 둘 다 세모가 아니에요! 😵<br>▶ 실행해서 확인하고, <b>한 군데만</b> 고쳐서 <b>두 세모를 한꺼번에</b> 고쳐 보세요. 어디를 고치면 될까요?',
+      code(SL, 'def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(90)', '', 'triangle()', JMP(120), 'triangle()'),
+      code(SL, 'def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)', '', 'triangle()', JMP(120), 'triangle()'),
+      '🔺 두 세모는 <b>같은 명령</b>으로 그렸어요. 그럼 고칠 곳은 명령을 부르는 줄일까요, 만들어 둔 상자 안일까요? 세모는 한 바퀴(360)를 <b>3</b>으로 나눠서 돌아요. <b>360 ÷ 3 = ?</b>'),
+    name: fix('이름이 달라요', '<b>세모 2개</b>를 그리려고 했는데 <b>빨간 에러</b>가 나요! 😵<br>▶ 실행해서 어느 줄에서 에러가 났는지 확인하고, <b>한 군데만</b> 고쳐 보세요.',
+      code(SL, TR8, '', 'triangle()', JMP(120), 'triangel()'),
+      code(SL, TR8, '', 'triangle()', JMP(120), 'triangle()'),
+      '🔤 에러가 알려 준 줄을 보세요. 명령을 <b>만들 때 붙인 이름</b>과 <b>부를 때 쓴 이름</b>이 글자 하나까지 똑같아야 해요.'),
+    pick: { kind: 'pick', noPrep: true, title: '🧩 골라서 만들기! 파란 네모 2개 🟦',
+      talk: '처음부터 끝까지 코드를 <b>골라서</b> 만들어요.<br>왼쪽 <b>한글 설명</b>을 읽고, 그 일을 하는 <b>코드</b>를 골라 순서대로 눌러 보세요. 오늘 배운 <b>명령 만들기</b>를 써서 네모 2개를 그려요.',
+      steps: [
+        { ko: '① 거북이 상자 열기', code: 'import turtle' },
+        { ko: '② 거북이를 꺼내 t 라고 부르기', code: 't = turtle.Turtle()' },
+        { ko: '③ t 를 거북이 모양으로', code: 't.shape("turtle")' },
+        { ko: '④ 거북이를 왼쪽 끝으로 옮기기 (펜을 든 채 옮기고 다시 내려요)', code: ST },
+        { ko: '⑤ 펜을 파란색으로', code: 't.color("blue")' },
+        { ko: '⑥ "square" 명령 만들기', code: 'def square():' },
+        { ko: '⑦ 4번 해 줘!', code: 'for i in range(4):', indent: 1 },
+        { ko: '⑧ 앞으로 80', code: 't.forward(80)', indent: 2 },
+        { ko: '⑨ 왼쪽으로 돌기', code: 't.left(90)', indent: 2 },
+        { ko: '⑩ 네모 명령 실행!', code: 'square()' },
+        { ko: '⑪ 펜 들기', code: 't.penup()' },
+        { ko: '⑫ 옆으로 점프! 150 앞으로', code: 't.forward(150)' },
+        { ko: '⑬ 펜 내리기', code: 't.pendown()' },
+        { ko: '⑭ 네모 명령 한 번 더!', code: 'square()' },
+      ],
+      bank: ['t.pendown()', 'square()', 't.forward(150)', 'def square():', 't.forward(80)', 'for i in range(4):', 't.color("blue")', 'import turtle', 't.left(90)', 't.shape("turtle")', 't.penup()', 't = turtle.Turtle()', ST, 'square()', 't.color("red")', 'for i in range(3):'],
+      clue: '🟦 <b>명령을 만들기</b>(def … 상자 안) 가 먼저예요. 명령을 <b>부르는 줄</b>은 그 뒤에 와야 해요. 같은 코드 버튼이 두 번 필요한 곳이 있어요!<br>🖌️ 색은 그림을 그리기 <b>전에</b> 정해요.',
+      done: '파란 네모 2개 완성! 🟦🟦 코드 한 줄 한 줄이 무슨 일을 하는지 알고 골랐어요. <b>다음 →</b>' },
+    house: { kind: 'goal', challenge: true, title: '🏆 도전! 집 짓기 🏠',
+      talk: '이번엔 <b>완전히 빈 화면</b>이에요! 흐린 그림처럼 <b>네모 몸통 위에 세모 지붕</b>이 있는 집을 그려 보세요.<br>맨 먼저 <b>거북이부터 데려와야</b> 해요. 네모와 세모는 <b>한 변이 모두 100</b>이에요. 네모 명령과 세모 명령을 <b>직접 만들어서</b> 불러 보세요.<br><span class="small">지붕은 네모 윗변 왼쪽 끝에서 시작해요. 거북이를 거기까지 어떻게 데려갈까요?</span>',
+      start: '', fullAnswer: true,
+      solution: PT + code('t.pensize(3)', 'def square():', '    for i in range(4):', '        t.forward(100)', '        t.left(90)', '', 'def triangle():', '    for i in range(3):', '        t.forward(100)', '        t.left(120)', '', 'square()', 't.left(90)', 't.forward(100)', 't.right(90)', 'triangle()') + '\n',
+      bank: ['def triangle():', 't.forward( )', 'import turtle', 'def square():', 't = turtle.Turtle()', 't.left( )', 't.right( )', 'square()', 'triangle()', 'for i in range( ):', 't.shape("turtle")'],
+      must: [['import turtle', '그림은 똑같아요! 👍 그런데 맨 위에 <b>거북이 상자를 여는 줄</b>이 빠졌어요.'], ['t.shape("turtle")', '그림은 똑같아요! 👍 그런데 화살표가 그리고 있어요. <b>거북이 모양으로 바꾸는 줄</b>을 넣어 보세요.'], ['def ', '그림은 똑같아요! 👍 그런데 이번 도전은 <b>def 로 나만의 명령</b>을 만들어서 그려야 해요.']],
+      clue: '🏠 먼저 <b>네모 명령</b>과 <b>세모 명령</b>을 만들어요 (오늘 배운 두 명령!). 그다음 <b>네모를 부르고 → 거북이를 윗변 왼쪽 끝으로 옮기고 → 세모를 불러요.</b><br>🧭 네모를 그리고 나면 거북이는 출발한 자리(왼쪽 아래)에 오른쪽을 보고 있어요. 위로 100 올라가려면 <b>왼쪽으로 돌고 → 앞으로 → 다시 오른쪽을 보게</b> 돌아요.',
+      done: '빈 화면에서 스스로 집을 지었어요! 🏆🏠 <b>명령 2개</b>를 직접 만들고 불렀어요. <b>다음 →</b>' },
+  };
+  delete E[4].review; delete E[4].challenge; delete E[4].insert;
   Object.assign(E[4], {
-    insert: [
-      [6, fix('세모가 하나뿐이에요', '<b>세모 2개</b>를 나란히 그리려고 했는데 하나만 나와요! 😵<br>▶ 실행해서 확인하고, <b>빠진 줄 하나</b>를 넣어 보세요.',
-        code('def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)', '', 'triangle()', 't.penup()', 't.forward(120)', 't.pendown()'),
-        code('def triangle():', '    for i in range(3):', '        t.forward(80)', '        t.left(120)', '', 'triangle()', 't.penup()', 't.forward(120)', 't.pendown()', 'triangle()'),
-        '🔺 세모 명령을 <b>몇 번 불렀는지</b> 세어 보세요. 자리를 옮긴 뒤에 무엇을 해야 할까요?')],
-    ],
-    challenge: {
-      kind: 'goal', title: '계단 명령 만들기 🪜',
-      talk: '계단 한 칸을 그리는 <b>step</b> 명령을 <b>직접 만들고</b>, 그 명령을 불러서 흐린 그림처럼 <b>계단 4칸</b>을 그려 보세요.<br>한 칸은 <b>앞으로 40 → 위로 40</b> 이에요.',
-      start: PT + '\n',
-      solution: PT + code('def step():', '    t.forward(40)', '    t.left(90)', '    t.forward(40)', '    t.right(90)', '', 'for i in range(4):', '    step()') + '\n',
-      bank: ['def step():', 't.forward( )', 't.left( )', 't.right( )', 'for i in range( ):', 'step()'],
-      must: [['def ', '그림은 똑같아요! 👍 그런데 이번 도전은 <b>def 로 나만의 명령</b>을 만들어서 그려야 해요.']],
-      clue: '🪜 먼저 <b>def step():</b> 아래에 계단 한 칸(앞으로 → 왼쪽 → 앞으로 → 오른쪽)을 넣어요.<br>그다음 맨 앞 칸부터 다시 써서 <b>step()</b> 을 4번 불러요.',
-    },
+    showPrep: true,
+    // 원래 미션에서 남긴 것: 0 미리보기, 6 자유 (빈 화면으로 바꿈. 나머지는 모두 새로 짰다)
+    rebuild: b => [b[0], P4.def, P4.call, P4.again, P4.mine, P4.three, P4.small, P4.paren, P4.angle, P4.name, P4.pick, P4.house, Object.assign({}, b[6], { title: '나만의 그림 만들기 🎨', code: '', placeholder: '여기에 직접 써 보세요!  🐢 거북이 데려오기 3줄부터 시작해요', talk: '이번엔 <b>완전히 빈 화면</b>이에요! 오늘 배운 <b>나만의 명령</b>(def)을 만들어서 마음대로 그려 보세요.<br>맨 먼저 <b>거북이 데려오기 3줄</b>부터 써요. 명령을 한 번 만들고 여러 번 불러서 그림을 꾸며 보세요. 꽃, 눈사람, 마을 무엇이든 좋아요!' })],
   });
 
   // ---------- 5차시 ----------
