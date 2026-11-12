@@ -154,6 +154,7 @@
   const writeTarget = (tpl, typed, wild) => tpl.replace(/@/g, wild === 'text' ? (typed.match(/"([a-z]+)"/i) || [0, 'red'])[1] : (typed.match(/-?\d+/) || ['100'])[0]);
   // 직접 쓰기 줄이 정말 통과인지: 숫자(또는 낱말)를 썼는지, 못 쓰게 한 낱말(wildNot)이 아닌지
   const writeOk = (l, v) => {
+    if (!l.write.includes('@')) return compare(v, l.write).ok;   // @ 가 없는 줄은 글자 그대로 써야 한다 (t.penup() 처럼)
     const word = l.wild === 'text' ? (v.match(/"([a-z]+)"/i) || [])[1] : (/\d/.test(v) ? 1 : 0);
     if (!word) return false;
     if (l.wildNot && l.wildNot.includes(String(word).toLowerCase())) return false;
