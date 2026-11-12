@@ -797,7 +797,7 @@
           stage.style.backgroundSize = '100% 100%';
           stage.style.backgroundRepeat = 'no-repeat';
           // 앞 미션에서 그린 그림이 남아 있으면 목표 그림과 헷갈리므로 무대를 비운다
-          stage.innerHTML = '<div class="goal-note">👻 흐린 그림이 <b>목표</b>예요.<br>똑같이 그려지게 만들어 보세요!</div>';
+          stage.innerHTML = '<div class="goal-note"><div>👻 흐린 그림이 <b>목표</b>예요.<br>똑같이 그려지게 만들어 보세요!</div></div>';
         }
         finish();
       }, err => { console.error('목표 그림을 만들지 못했어요', err && err.toString()); finish(); });
